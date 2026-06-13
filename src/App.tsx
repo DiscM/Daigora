@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Leaf, Play, RotateCcw, Sparkles } from 'lucide-react';
+import { Droplet, Factory, Heart, Landmark, Leaf, Menu, Play, Recycle, RotateCcw, Settings, Sparkles, Users } from 'lucide-react';
 import { cardById, crisisById, projectAids } from './game/content';
 import { canPlayCard, createGame, endTurn, getCardCost, playCard } from './game/engine';
 import type { CardInstance, GameState, IndexKey } from './game/types';
+import { PhaserBoard } from './phaser/PhaserBoard';
 
 const SAVE_KEY = 'heal-the-planet-save-v1';
 const indexLabels: Record<IndexKey, string> = {
@@ -59,73 +60,77 @@ export function App() {
     <main className="app-shell">
       <header className="top-bar">
         <div className="brand">
-          <span className="brand-mark"><Leaf size={22} /></span>
-          <div>
-            <h1>Heal the Planet</h1>
-            <p>Local council session</p>
-          </div>
+          <h1>Heal the Planet</h1>
         </div>
         <div className="resource-strip" aria-label="Game resources">
-          <Resource label="Turn" value={`${Math.min(game.turn, 10)} / 10`} />
-          <Resource label="Planet Health" value={`${game.planetHealth} / ${game.maxPlanetHealth}`} tone={game.planetHealth <= 6 ? 'danger' : 'good'} />
-          <Resource label="AP" value={game.actionPoints} />
-          <Resource label="PP" value={game.policyPoints} />
+          <Resource label="Turn" value={`${Math.min(game.turn, 10)} / 10`} kind="turn" />
+          <Resource label="Planet Health" value={`${game.planetHealth} / ${game.maxPlanetHealth}`} kind="health" tone={game.planetHealth <= 6 ? 'danger' : 'good'} />
+          <Resource label="AP" value={game.actionPoints} kind="ap" />
+          <Resource label="PP" value={game.policyPoints} kind="pp" />
         </div>
-        <div className="header-actions">
-          <button className="tonal-button" onClick={randomizeSeed} title="Start a random seed">
-            <Sparkles size={18} /> Random
+        <div className="quick-actions">
+          <button className="round-action" onClick={startNewGame} title="Restart with current setup">
+            <Settings size={28} />
           </button>
-          <button className="icon-button" onClick={startNewGame} title="Restart with current setup">
-            <RotateCcw size={18} />
-          </button>
+          <details className="header-actions">
+            <summary title="Game setup"><Menu size={30} /></summary>
+          <div className="setup-popover">
+            <label className="seed-control">
+              <span>Seed</span>
+              <input value={seed} onChange={(event) => setSeed(event.target.value)} />
+            </label>
+            <div className="menu-actions">
+              <button className="tonal-button" onClick={randomizeSeed} title="Start a random seed">
+                <Sparkles size={18} /> Random
+              </button>
+              <button className="icon-button" onClick={startNewGame} title="Restart with current setup">
+                <RotateCcw size={18} />
+              </button>
+              <button className="filled-button" onClick={startNewGame}>
+                <Play size={18} /> New Game
+              </button>
+            </div>
+            <div className="aid-picker">
+              {projectAids.map((aid) => (
+                <button
+                  key={aid.id}
+                  className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
+                  onClick={() => toggleAid(aid.id)}
+                  title={`${aid.passive} Drawback: ${aid.drawback}`}
+                >
+                  {aid.name.replace('The ', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+          </details>
         </div>
       </header>
 
-      <section className="setup-band" aria-label="Session setup">
-        <label>
-          Seed
-          <input value={seed} onChange={(event) => setSeed(event.target.value)} />
-        </label>
-        <div className="aid-picker">
-          {projectAids.map((aid) => (
-            <button
-              key={aid.id}
-              className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
-              onClick={() => toggleAid(aid.id)}
-              title={`${aid.passive} Drawback: ${aid.drawback}`}
-            >
-              {aid.name.replace('The ', '')}
-            </button>
-          ))}
-        </div>
-        <button className="filled-button" onClick={startNewGame}>
-          <Play size={18} /> New Game
-        </button>
-      </section>
-
       <section className="game-layout">
         <aside className="panel crisis-panel">
-          <p className="eyebrow">Current Crisis</p>
+          <p className="panel-ribbon">Current Crisis</p>
           {currentCrisis ? (
             <>
+              <div className="crisis-art" aria-hidden="true" />
               <h2>{currentCrisis.name}</h2>
-              <p>{currentCrisis.text}</p>
+              <ul className="crisis-effects">
+                {splitSentences(currentCrisis.text).map((sentence) => (
+                  <li key={sentence}>
+                    <span className="effect-icon"><Factory size={16} /></span>
+                    <span>{sentence}</span>
+                  </li>
+                ))}
+              </ul>
               {currentCrisis.calamity && <div className="warning-note">{currentCrisis.calamity.text}</div>}
             </>
           ) : (
             <p>No active crisis.</p>
           )}
-          <div className="pile-grid">
-            <MiniStat label="Deck" value={game.deck.length} />
-            <MiniStat label="Discard" value={game.discard.length} />
-            <MiniStat label="Exhaust" value={game.exhausted.length} />
-            <MiniStat label="Crisis" value={game.crisisDeck.length} />
-          </div>
         </aside>
 
         <section className="planet-stage" aria-label="Planet board">
-          <div className="stars" />
-          <Planet health={game.planetHealth} max={game.maxPlanetHealth} indexes={game.indexes} />
+          <PhaserBoard game={game} />
           <div className="aid-row">
             {selectedAids.map((aid) => (
               <div className="aid-token" key={aid.id} title={`${aid.passive} Drawback: ${aid.drawback}`}>
@@ -145,24 +150,32 @@ export function App() {
         <aside className="panel meter-panel">
           <p className="eyebrow">Readiness</p>
           {(Object.keys(indexLabels) as IndexKey[]).map((key) => (
-            <IndexMeter key={key} label={indexLabels[key]} value={game.indexes[key]} />
+            <IndexMeter key={key} indexKey={key} label={indexLabels[key]} value={game.indexes[key]} />
           ))}
-          <div className="status-strip">
-            <MiniStat label="Pollution" value={countStatus(game, 'status-pollution')} />
-            <MiniStat label="Apathy" value={countStatus(game, 'status-apathy')} />
-            <MiniStat label="Delay" value={countStatus(game, 'status-delay')} />
-            <MiniStat label="Misinformation" value={countStatus(game, 'status-misinformation')} />
-          </div>
         </aside>
       </section>
 
-      <section className="hand-row" aria-label="Action hand">
-        {game.hand.map((card) => (
-          <ActionCard key={card.instanceId} game={game} instance={card} onPlay={() => setGame((state) => playCard(state, card.instanceId))} />
-        ))}
-        <button className="end-turn" onClick={() => setGame((state) => endTurn(state))} disabled={game.phase !== 'play'}>
-          End Turn
-        </button>
+      <section className="bottom-row">
+        <div className="pile-zone" aria-label="Deck and discard">
+          <DeckStack label="Deck" value={game.deck.length} variant="deck" />
+          <DeckStack label="Discard" value={game.discard.length} variant="discard" />
+          <button className="status-button" type="button">
+            <Leaf size={18} /> Status
+          </button>
+        </div>
+
+        <section className="hand-row" aria-label="Action hand">
+          {game.hand.map((card) => (
+            <ActionCard key={card.instanceId} game={game} instance={card} onPlay={() => setGame((state) => playCard(state, card.instanceId))} />
+          ))}
+        </section>
+
+        <div className="side-actions">
+          <ActiveProjects game={game} />
+          <button className="end-turn" onClick={() => setGame((state) => endTurn(state))} disabled={game.phase !== 'play'}>
+            End Turn
+          </button>
+        </div>
       </section>
 
       <section className="log-panel" aria-label="Game log">
@@ -174,9 +187,10 @@ export function App() {
   );
 }
 
-function Resource({ label, value, tone }: { label: string; value: string | number; tone?: 'good' | 'danger' }) {
+function Resource({ label, value, kind, tone }: { label: string; value: string | number; kind: 'turn' | 'health' | 'ap' | 'pp'; tone?: 'good' | 'danger' }) {
   return (
-    <div className={`resource ${tone ?? ''}`}>
+    <div className={`resource ${kind} ${tone ?? ''}`}>
+      <span className="resource-icon">{resourceIcon(kind)}</span>
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
@@ -192,41 +206,18 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function IndexMeter({ label, value }: { label: string; value: number }) {
+function IndexMeter({ indexKey, label, value }: { indexKey: IndexKey; label: string; value: number }) {
   return (
-    <div className="index-meter">
+    <div className={`index-meter ${indexKey}`}>
+      <span className="index-icon">{indexIcon(indexKey)}</span>
       <div className="meter-label">
         <span>{label}</span>
-        <strong>{value}/10</strong>
+        <strong>{value}</strong>
       </div>
       <div className="meter-track">
         <div style={{ width: `${value * 10}%` }} />
       </div>
-    </div>
-  );
-}
-
-function Planet({ health, max, indexes }: { health: number; max: number; indexes: Record<IndexKey, number> }) {
-  const healthRatio = health / max;
-  const average = (indexes.trust + indexes.ecology + indexes.economy + indexes.coordination) / 40;
-  return (
-    <div className="planet-wrap" style={{ '--planet-health': healthRatio, '--planet-vitality': average } as React.CSSProperties}>
-      <svg viewBox="0 0 420 420" role="img" aria-label="Floating planet in space">
-        <defs>
-          <radialGradient id="ocean" cx="38%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#9dd9ff" />
-            <stop offset="55%" stopColor="#3f8fcf" />
-            <stop offset="100%" stopColor="#1f5f99" />
-          </radialGradient>
-        </defs>
-        <circle className="planet-glow" cx="210" cy="210" r="178" />
-        <circle cx="210" cy="210" r="142" fill="url(#ocean)" />
-        <path className="land land-one" d="M132 140c28-34 84-33 104-7 18 24-14 46-4 76 8 25 44 23 47 50 3 25-31 49-69 42-32-6-39-31-66-37-28-6-62 13-75-10-13-22 18-42 14-68-3-22 30-25 49-46Z" />
-        <path className="land land-two" d="M265 101c41 5 72 35 75 70 2 26-16 32-10 57 6 26 32 34 25 54-8 24-58 30-83 9-22-19-1-43-18-66-16-22-52-12-63-36-13-28 25-93 74-88Z" />
-        <path className="cloud" d="M91 187c50-31 93-33 136-13M175 298c46 18 91 18 137-3M235 121c35 7 67 22 94 46" />
-        <circle className="damage-dot dot-one" cx="294" cy="137" r="13" />
-        <circle className="damage-dot dot-two" cx="151" cy="260" r="10" />
-      </svg>
+      <div className="meter-scale"><span>0</span><span>10</span></div>
     </div>
   );
 }
@@ -237,14 +228,66 @@ function ActionCard({ game, instance, onPlay }: { game: GameState; instance: Car
   const cost = getCardCost(game, card);
   return (
     <button className={`action-card ${card.type.toLowerCase().replaceAll(' ', '-')}`} onClick={onPlay} disabled={!legal.ok} title={legal.reason}>
-      <span className="card-type">{card.type}</span>
+      <span className="card-cost">{cost.ap || cost.pp}</span>
       <strong>{card.name}</strong>
+      <span className={`card-art ${card.type.toLowerCase().replaceAll(' ', '-')}`} aria-hidden="true" />
       <p>{card.text}</p>
-      <span className="card-cost">{cost.ap ? `${cost.ap} AP` : ''}{cost.ap && cost.pp ? ' + ' : ''}{cost.pp ? `${cost.pp} PP` : ''}</span>
     </button>
+  );
+}
+
+function DeckStack({ label, value, variant }: { label: string; value: number; variant: 'deck' | 'discard' }) {
+  return (
+    <div className={`deck-stack ${variant}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ActiveProjects({ game }: { game: GameState }) {
+  const shield = game.incomingDamagePrevention + game.ongoing.reduce((sum, effect) => sum + effect.amount, 0);
+  const ecology = Math.max(1, game.selectedAidIds.filter((id) => id.includes('ecolog') || id.includes('responder')).length);
+  const trust = Math.max(1, game.selectedAidIds.filter((id) => id.includes('educator') || id.includes('policy')).length);
+  return (
+    <section className="active-projects" aria-label="Active projects">
+      <p>Active Projects</p>
+      <div>
+        <ProjectToken kind="ap" value={shield || 2} />
+        <ProjectToken kind="ecology" value={ecology} />
+        <ProjectToken kind="trust" value={trust} />
+      </div>
+    </section>
+  );
+}
+
+function ProjectToken({ kind, value }: { kind: 'ap' | 'ecology' | 'trust'; value: number }) {
+  return (
+    <span className={`project-token ${kind}`}>
+      {kind === 'ap' ? <Droplet size={21} /> : kind === 'ecology' ? <Leaf size={21} /> : <Users size={21} />}
+      <strong>{value}</strong>
+    </span>
   );
 }
 
 function countStatus(game: GameState, defId: string): number {
   return [...game.deck, ...game.hand, ...game.discard].filter((card) => card.defId === defId).length;
+}
+
+function splitSentences(text: string): string[] {
+  return text.split(/(?<=\\.)\\s+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function resourceIcon(kind: 'turn' | 'health' | 'ap' | 'pp') {
+  if (kind === 'health') return <Heart size={22} />;
+  if (kind === 'ap') return <Droplet size={22} />;
+  if (kind === 'pp') return <Landmark size={22} />;
+  return null;
+}
+
+function indexIcon(key: IndexKey) {
+  if (key === 'trust') return <Users size={24} />;
+  if (key === 'ecology') return <Leaf size={24} />;
+  if (key === 'economy') return <Landmark size={24} />;
+  return <Recycle size={24} />;
 }
