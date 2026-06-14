@@ -1070,6 +1070,10 @@ button:disabled {
   font-size: 0.62rem;
 }
 
+.card-cost.pp {
+  background: var(--hd-yellow);
+}
+
 .action-card strong {
   min-width: 0;
   overflow: hidden;

@@ -171,9 +171,9 @@ function checkLoss(state: GameState): void {
 function resolveCascadingIfNeeded(state: GameState): void {
   const critical = INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length;
   if (critical >= 2) {
-    applyHealth(state, -3);
+    applyHealth(state, -4);
     addStatusToDiscard(state, 'Apathy');
-    state.log = addLog(state, 'Cascading Disaster triggered: -3 Health and +1 Apathy.');
+    state.log = addLog(state, 'Cascading Disaster triggered: -4 Health and +1 Apathy.');
   }
 }
 
@@ -261,12 +261,25 @@ function resolveCrisis(state: GameState, crisisId: string): void {
   if (crisis.id === 'industrial-pollution-corridor') {
     addStatusToDiscard(state, 'Pollution');
     addStatusToDiscard(state, 'Pollution');
+    addStatusToDiscard(state, 'Pollution');
   }
-  if (crisis.id === 'plastic-waste-surge') addStatusToDiscard(state, 'Pollution');
-  if (crisis.id === 'misleading-campaign') addStatusToDiscard(state, 'Misinformation');
+  if (crisis.id === 'plastic-waste-surge') {
+    addStatusToDiscard(state, 'Pollution');
+    addStatusToDiscard(state, 'Pollution');
+  }
+  if (crisis.id === 'misleading-campaign') {
+    addStatusToDiscard(state, 'Misinformation');
+    addStatusToDiscard(state, 'Backlash');
+  }
   if (crisis.id === 'public-burnout') state.nextTurnDrawPenalty += 1;
-  if (crisis.id === 'supply-chain-shock') state.thisTurnCostPenalty.Technology = (state.thisTurnCostPenalty.Technology ?? 0) + 1;
-  if (crisis.id === 'diplomatic-gridlock') state.thisTurnCostPenalty.Policy = (state.thisTurnCostPenalty.Policy ?? 0) + 1;
+  if (crisis.id === 'supply-chain-shock') {
+    state.thisTurnCostPenalty.Technology = (state.thisTurnCostPenalty.Technology ?? 0) + 1;
+    state.nextTurnCostPenalty.Technology = (state.nextTurnCostPenalty.Technology ?? 0) + 1;
+  }
+  if (crisis.id === 'diplomatic-gridlock') {
+    state.thisTurnCostPenalty.Policy = (state.thisTurnCostPenalty.Policy ?? 0) + 1;
+    state.nextTurnCostPenalty.Policy = (state.nextTurnCostPenalty.Policy ?? 0) + 1;
+  }
   if (crisis.id === 'deforestation-surge') state.untreatedDeforestation = true;
 
   crisis.effects.forEach((effect) => applyEffect(state, effect));
@@ -340,20 +353,20 @@ export function endTurn(input: GameState): GameState {
     state.log = addLog(state, 'Plastic Waste Surge added another Pollution.');
   }
   if (state.untreatedDeforestation) {
-    applyHealth(state, -2);
-    state.log = addLog(state, 'Untreated deforestation caused 2 more damage.');
+    applyHealth(state, -3);
+    state.log = addLog(state, 'Untreated deforestation caused 3 more damage.');
   }
-  if (state.indexes.trust <= 2) {
+  if (state.indexes.trust <= 3) {
     state.nextTurnDrawPenalty += 1;
     addStatusToDiscard(state, 'Apathy');
     state.log = addLog(state, 'Mass Apathy triggered.');
   }
-  if (state.indexes.economy <= 2) {
+  if (state.indexes.economy <= 3) {
     state.nextTurnCostPenalty.Technology = (state.nextTurnCostPenalty.Technology ?? 0) + 1;
     state.nextTurnCostPenalty.Policy = (state.nextTurnCostPenalty.Policy ?? 0) + 1;
     state.log = addLog(state, 'Economic Pushback triggered.');
   }
-  if (state.indexes.coordination <= 2) {
+  if (state.indexes.coordination <= 3) {
     state.policyLockedNextTurn = true;
     state.log = addLog(state, 'Policy Paralysis triggered.');
   }
