@@ -44,6 +44,44 @@ describe('Heal the Planet engine', () => {
     expect([...next.deck, ...next.hand, ...next.discard].some((card) => card.defId === 'status-pollution')).toBe(false);
   });
 
+  it('cleansing cards remove retained apathy the same turn they are played', () => {
+    const state = createGame('apathy-cleanse-test', ['educator']);
+    state.hand = [
+      { defId: 'river-cleanup', instanceId: 'river' },
+      { defId: 'status-apathy', instanceId: 'apathy' },
+      { defId: 'status-apathy', instanceId: 'apathy-2' },
+    ];
+    state.discard = [
+      { defId: 'status-pollution', instanceId: 'pollution' },
+      { defId: 'status-apathy', instanceId: 'apathy-3' },
+    ];
+    state.actionPoints = 3;
+
+    const next = playCard(state, 'river');
+    const remainingStatuses = [...next.deck, ...next.hand, ...next.discard].map((card) => card.defId);
+
+    expect(remainingStatuses).not.toContain('status-apathy');
+    expect(remainingStatuses).not.toContain('status-pollution');
+  });
+
+  it('community workshop cleanses both apathy and misinformation', () => {
+    const state = createGame('double-cleanse-test', ['educator']);
+    state.hand = [{ defId: 'community-workshop', instanceId: 'workshop' }];
+    state.discard = [
+      { defId: 'status-apathy', instanceId: 'apathy' },
+      { defId: 'status-misinformation', instanceId: 'misinformation' },
+      { defId: 'status-pollution', instanceId: 'pollution' },
+    ];
+    state.actionPoints = 3;
+
+    const next = playCard(state, 'workshop');
+    const remainingStatuses = [...next.deck, ...next.hand, ...next.discard].map((card) => card.defId);
+
+    expect(remainingStatuses).not.toContain('status-apathy');
+    expect(remainingStatuses).not.toContain('status-misinformation');
+    expect(remainingStatuses).toContain('status-pollution');
+  });
+
   it('applies policy point costs separately from AP', () => {
     const state = createGame('policy-test', ['policy-advocate']);
     state.hand = [{ defId: 'clean-infrastructure-act', instanceId: 'policy' }];
@@ -55,6 +93,81 @@ describe('Heal the Planet engine', () => {
 
     expect(cost).toEqual({ ap: 0, pp: 2 });
     expect(next.indexes.coordination).toBeGreaterThan(state.indexes.coordination);
+  });
+
+  it('prevents later damage during the same turn', () => {
+    const state = createGame('prevent-test', ['educator']);
+    state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
+    state.actionPoints = 3;
+    state.planetHealth = 10;
+    state.untreatedDeforestation = true;
+
+    const afterCard = playCard(state, 'emergency');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterCard.incomingDamagePrevention).toBe(3);
+    expect(afterTurn.planetHealth).toBe(10);
+    expect(afterTurn.log.some((entry) => entry.text === 'Averted untreated deforestation damage.')).toBe(true);
+  });
+
+  it('deals pending crisis damage at end of turn if not averted', () => {
+    const state = createGame('pending-damage-test', ['educator']);
+    state.hand = [];
+    state.pendingCrisisDamage = 2;
+    state.planetHealth = 10;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const next = endTurn(state);
+
+    expect(next.planetHealth).toBe(8);
+    expect(next.log.some((entry) => entry.text === 'Crisis dealt 2 damage.')).toBe(true);
+  });
+
+  it('cancels pending crisis damage when a prevention card averts it', () => {
+    const state = createGame('avert-test', ['educator']);
+    state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
+    state.pendingCrisisDamage = 2;
+    state.planetHealth = 10;
+    state.actionPoints = 3;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const afterCard = playCard(state, 'emergency');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterCard.crisisAvertedThisTurn).toBe(true);
+    expect(afterTurn.planetHealth).toBe(10);
+    expect(afterTurn.log.some((entry) => entry.text === 'Averted 2 crisis damage.')).toBe(true);
+  });
+
+  it('does not deal untreated deforestation damage when the crisis is averted', () => {
+    const state = createGame('avert-deforestation-test', ['educator']);
+    state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
+    state.currentCrisisId = 'deforestation-surge';
+    state.untreatedDeforestation = true;
+    state.planetHealth = 10;
+    state.actionPoints = 3;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const afterCard = playCard(state, 'emergency');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterTurn.planetHealth).toBe(10);
+    expect(afterTurn.log.some((entry) => entry.text === 'Averted untreated deforestation damage.')).toBe(true);
+  });
+
+  it('does not deal cascading crisis damage when the crisis is averted', () => {
+    const state = createGame('avert-cascade-test', ['educator']);
+    state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
+    state.currentCrisisId = 'heat-dome';
+    state.planetHealth = 10;
+    state.actionPoints = 3;
+    state.indexes = { trust: 1, ecology: 1, economy: 6, coordination: 6 };
+
+    const afterCard = playCard(state, 'emergency');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterTurn.planetHealth).toBe(10);
+    expect(afterTurn.log.some((entry) => entry.text === 'Cascading Disaster triggered: -2 Health and +1 Apathy.')).toBe(true);
   });
 
   it('moves from turn ten into final scoring', () => {
@@ -89,5 +202,18 @@ describe('Heal the Planet engine', () => {
     const next = playCard(state, findCard(state, 'youth-organizer-network').instanceId);
 
     expect(next.indexes.trust).toBe(10);
+  });
+
+  it('retains apathy in hand between turns until cleansed', () => {
+    const state = createGame('retain-test', ['educator']);
+    state.hand = [
+      { defId: 'status-apathy', instanceId: 'apathy' },
+      { defId: 'community-workshop', instanceId: 'workshop' },
+    ];
+
+    const next = endTurn(state);
+
+    expect(next.hand.some((card) => card.instanceId === 'apathy')).toBe(true);
+    expect(next.discard.some((card) => card.instanceId === 'workshop')).toBe(true);
   });
 });

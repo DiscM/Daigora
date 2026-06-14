@@ -63,6 +63,10 @@ function findDefinition(instance: CardInstance): CardDefinition {
   return cardById[instance.defId];
 }
 
+function isRetained(instance: CardInstance): boolean {
+  return findDefinition(instance).keywords?.includes('Retain') ?? false;
+}
+
 function addStatusToDiscard(state: GameState, status: StatusKind): void {
   const map: Record<StatusKind, string> = {
     Pollution: 'status-pollution',
@@ -160,6 +164,14 @@ function applyEffect(state: GameState, effect: Effect): void {
   }
 }
 
+function applyCrisisEffect(state: GameState, effect: Effect): void {
+  if (effect.kind === 'health' && effect.amount < 0) {
+    state.pendingCrisisDamage += Math.abs(effect.amount);
+    return;
+  }
+  applyEffect(state, effect);
+}
+
 function checkLoss(state: GameState): void {
   if (state.planetHealth <= 0) {
     state.phase = 'gameOver';
@@ -168,12 +180,13 @@ function checkLoss(state: GameState): void {
   }
 }
 
-function resolveCascadingIfNeeded(state: GameState): void {
+function resolveCascadingIfNeeded(state: GameState, deferDamage = false): void {
   const critical = INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length;
   if (critical >= 2) {
-    applyHealth(state, -4);
+    if (deferDamage) state.pendingCrisisDamage += 2;
+    else applyHealth(state, -2);
     addStatusToDiscard(state, 'Apathy');
-    state.log = addLog(state, 'Cascading Disaster triggered: -4 Health and +1 Apathy.');
+    state.log = addLog(state, 'Cascading Disaster triggered: -2 Health and +1 Apathy.');
   }
 }
 
@@ -208,12 +221,15 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     exhausted: [],
     ongoing: [],
     incomingDamagePrevention: 0,
+    pendingCrisisDamage: 0,
+    crisisAvertedThisTurn: false,
     nextTurnDrawPenalty: 0,
     nextTurnCostPenalty: {},
     thisTurnCostPenalty: {},
     policyLockedNextTurn: false,
     policyLockedThisTurn: false,
     noEnvironmentalPlayedThisTurn: true,
+    educationBonusUsedThisTurn: false,
     untreatedDeforestation: false,
     log: [],
   };
@@ -229,13 +245,16 @@ export function startTurn(input: GameState): GameState {
   state.turn += 1;
   state.actionPoints = state.turn >= 6 ? 4 : 3;
   state.incomingDamagePrevention = 0;
+  state.pendingCrisisDamage = 0;
+  state.crisisAvertedThisTurn = false;
   state.thisTurnCostPenalty = { ...state.nextTurnCostPenalty };
   state.nextTurnCostPenalty = {};
   state.policyLockedThisTurn = state.policyLockedNextTurn;
   state.policyLockedNextTurn = false;
   state.noEnvironmentalPlayedThisTurn = true;
+  state.educationBonusUsedThisTurn = false;
   state.untreatedDeforestation = false;
-  state.hand = [];
+  state.hand = state.hand.filter(isRetained);
 
   if (state.selectedAidIds.includes('disaster-responder')) {
     state.incomingDamagePrevention += 1;
@@ -282,14 +301,14 @@ function resolveCrisis(state: GameState, crisisId: string): void {
   }
   if (crisis.id === 'deforestation-surge') state.untreatedDeforestation = true;
 
-  crisis.effects.forEach((effect) => applyEffect(state, effect));
+  crisis.effects.forEach((effect) => applyCrisisEffect(state, effect));
   if (crisis.calamity && state.indexes[crisis.calamity.index] <= crisis.calamity.threshold) {
-    crisis.calamity.effects.forEach((effect) => applyEffect(state, effect));
+    crisis.calamity.effects.forEach((effect) => applyCrisisEffect(state, effect));
     if (crisis.id === 'aging-water-infrastructure') addStatusToDiscard(state, 'Apathy');
     if (crisis.id === 'industrial-pollution-corridor') addStatusToDiscard(state, 'Pollution');
     state.log = addLog(state, crisis.calamity.text);
   }
-  resolveCascadingIfNeeded(state);
+  resolveCascadingIfNeeded(state, true);
 }
 
 export function getCardCost(state: GameState, card: CardDefinition): { ap: number; pp: number } {
@@ -331,11 +350,21 @@ export function playCard(input: GameState, instanceId: string): GameState {
   state.policyPoints -= cost.pp;
 
   card.effects.forEach((effect) => applyEffect(state, effect));
+  if (card.effects.some((effect) => effect.kind === 'preventDamage')) {
+    state.crisisAvertedThisTurn = true;
+  }
+  if (card.keywords?.includes('Cleanse')) {
+    const removed = cleanse(state, Number.MAX_SAFE_INTEGER, 'Apathy');
+    if (removed > 0) state.log = addLog(state, `Cleansed ${removed} retained Apathy.`);
+  }
   if (card.type === 'Environmental Work') {
     state.noEnvironmentalPlayedThisTurn = false;
     state.untreatedDeforestation = false;
   }
-  if (card.type === 'Education' && state.selectedAidIds.includes('educator')) mutateIndex(state, 'trust', 1);
+  if (card.type === 'Education' && state.selectedAidIds.includes('educator') && !state.educationBonusUsedThisTurn) {
+    mutateIndex(state, 'trust', 1);
+    state.educationBonusUsedThisTurn = true;
+  }
   if (card.type === 'Policy' && state.selectedAidIds.includes('policy-advocate')) state.policyPoints += 1;
 
   if (card.keywords?.includes('Exhaust') || card.keywords?.includes('Ongoing')) state.exhausted.push(instance);
@@ -348,13 +377,25 @@ export function playCard(input: GameState, instanceId: string): GameState {
 export function endTurn(input: GameState): GameState {
   const state = structuredClone(input) as GameState;
   if (state.phase !== 'play') return state;
+  if (state.pendingCrisisDamage > 0) {
+    if (state.crisisAvertedThisTurn) {
+      state.log = addLog(state, `Averted ${state.pendingCrisisDamage} crisis damage.`);
+      state.pendingCrisisDamage = 0;
+    } else {
+      applyHealth(state, -state.pendingCrisisDamage);
+      state.log = addLog(state, `Crisis dealt ${state.pendingCrisisDamage} damage.`);
+      state.pendingCrisisDamage = 0;
+    }
+  }
   if (state.currentCrisisId === 'plastic-waste-surge' && state.noEnvironmentalPlayedThisTurn) {
     addStatusToDiscard(state, 'Pollution');
     state.log = addLog(state, 'Plastic Waste Surge added another Pollution.');
   }
-  if (state.untreatedDeforestation) {
-    applyHealth(state, -3);
-    state.log = addLog(state, 'Untreated deforestation caused 3 more damage.');
+  if (state.untreatedDeforestation && !state.crisisAvertedThisTurn) {
+    applyHealth(state, -2);
+    state.log = addLog(state, 'Untreated deforestation caused 2 more damage.');
+  } else if (state.untreatedDeforestation) {
+    state.log = addLog(state, 'Averted untreated deforestation damage.');
   }
   if (state.indexes.trust <= 3) {
     state.nextTurnDrawPenalty += 1;
@@ -370,11 +411,13 @@ export function endTurn(input: GameState): GameState {
     state.policyLockedNextTurn = true;
     state.log = addLog(state, 'Policy Paralysis triggered.');
   }
-  resolveCascadingIfNeeded(state);
+  resolveCascadingIfNeeded(state, state.crisisAvertedThisTurn);
   state.crisisDiscard.push(...(state.currentCrisisId ? [state.currentCrisisId] : []));
   state.currentCrisisId = undefined;
-  state.discard.push(...state.hand);
-  state.hand = [];
+  const retained = state.hand.filter(isRetained);
+  const discarded = state.hand.filter((card) => !isRetained(card));
+  state.discard.push(...discarded);
+  state.hand = retained;
   if (state.planetHealth <= 0) {
     checkLoss(state);
     return state;

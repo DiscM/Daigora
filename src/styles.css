@@ -666,6 +666,34 @@ button:disabled {
   line-height: 1.35;
 }
 
+.crisis-effects li.condition-met,
+.warning-note.condition-met {
+  color: rgba(203, 213, 225, 0.5);
+}
+
+.crisis-effects li.condition-met .effect-copy,
+.warning-note.condition-met {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--hd-green);
+}
+
+.crisis-effects li.condition-met .effect-icon {
+  border-color: var(--hd-green);
+  color: var(--hd-darker);
+  background: var(--hd-green);
+}
+
+.crisis-effects li.condition-met .effect-icon svg {
+  display: none;
+}
+
+.crisis-effects li.condition-met .effect-icon::before {
+  content: "✓";
+  font-family: "Press Start 2P", "JetBrains Mono", monospace;
+  font-size: 0.56rem;
+}
+
 .effect-icon {
   width: 24px;
   height: 24px;
@@ -674,6 +702,46 @@ button:disabled {
   border: 2px solid #70472c;
   color: #ffe2c7;
   background: #3e2418;
+}
+
+.effect-copy {
+  position: relative;
+  min-width: 0;
+}
+
+.status-tooltip {
+  display: inline-block;
+  border-bottom: 2px dotted var(--hd-yellow);
+  color: var(--hd-yellow);
+  cursor: help;
+  outline: none;
+}
+
+.status-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 80;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  padding: 8px 10px;
+  border: 2px solid var(--hd-border);
+  color: var(--hd-text);
+  background: var(--hd-darker);
+  box-shadow: var(--hd-shadow-md);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transition: opacity 120ms ease;
+  white-space: normal;
+}
+
+.status-tooltip:hover::after,
+.status-tooltip:focus-visible::after {
+  opacity: 1;
 }
 
 .warning-note {

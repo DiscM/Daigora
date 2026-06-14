@@ -84,12 +84,15 @@ export interface GameState {
   exhausted: CardInstance[];
   ongoing: OngoingEffect[];
   incomingDamagePrevention: number;
+  pendingCrisisDamage: number;
+  crisisAvertedThisTurn: boolean;
   nextTurnDrawPenalty: number;
   nextTurnCostPenalty: Partial<Record<CardType, number>>;
   thisTurnCostPenalty: Partial<Record<CardType, number>>;
   policyLockedNextTurn: boolean;
   policyLockedThisTurn: boolean;
   noEnvironmentalPlayedThisTurn: boolean;
+  educationBonusUsedThisTurn: boolean;
   untreatedDeforestation: boolean;
   finalRating?: string;
   finalSummary?: string;
