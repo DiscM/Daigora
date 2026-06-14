@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from './content';
-import { canPlayCard, createGame, endTurn, getCardCost, playCard, resolveFinalCrisis } from './engine';
+import { canPlayCard, createGame, endTurn, getCardCost, playCard, resolveFinalCrisis, startTurn } from './engine';
 import type { GameState } from './types';
 
 function findCard(state: GameState, defId: string) {
@@ -249,5 +249,19 @@ describe('Heal the Planet engine', () => {
 
     expect(next.hand.some((card) => card.instanceId === 'apathy')).toBe(true);
     expect(next.discard.some((card) => card.instanceId === 'workshop')).toBe(true);
+  });
+
+  it('triggers calamity for public-burnout when ecology is low', () => {
+    const state = createGame('burnout-calamity', ['educator']);
+    state.indexes.ecology = 2; // Below threshold of 3
+    state.indexes.coordination = 5;
+    
+    // We bypass normal deck shift by directly calling resolveCrisis
+    // which is internal but we can start a new turn where we manipulate the deck
+    state.crisisDeck = ['public-burnout'];
+    const next = startTurn(state);
+    
+    expect(next.indexes.coordination).toBe(3); // Lost 2 coordination due to calamity
+    expect(next.indexes.trust).toBe(1); // Baseline: -3 Trust (4 -> 1)
   });
 });

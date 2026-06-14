@@ -364,12 +364,12 @@ button:disabled {
 
 .resource.flash-gain,
 .index-meter.flash-gain {
-  animation: feedback-gain-pulse 760ms steps(2, jump-none);
+  animation: index-gain-bounce 650ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .resource.flash-loss,
 .index-meter.flash-loss {
-  animation: feedback-loss-pulse 760ms steps(2, jump-none);
+  animation: index-loss-shake 650ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .resource.flash-gain .resource-icon,
@@ -794,32 +794,36 @@ button:disabled {
 .feedback-layer {
   position: absolute;
   z-index: 14;
-  left: 50%;
-  top: 16%;
-  width: min(390px, 54vw);
-  display: grid;
-  justify-items: center;
+  right: 18px;
+  top: 18px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 8px;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .feedback-pop {
   max-width: 100%;
+  width: 100%;
   min-height: 30px;
-  display: grid;
-  place-items: center;
-  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 12px;
   border: 3px solid var(--hd-border);
+  border-left-width: 6px;
   color: var(--hd-text);
-  background: rgba(3, 10, 8, 0.9);
+  background: rgba(3, 10, 8, 0.95);
   box-shadow: var(--hd-shadow-md);
   font-family: "Press Start 2P", "JetBrains Mono", monospace;
-  font-size: clamp(0.46rem, 0.72vw, 0.64rem);
-  line-height: 1.35;
-  text-align: center;
+  font-size: 0.54rem;
+  line-height: 1.4;
+  text-align: left;
   text-transform: uppercase;
-  animation: feedback-pop-rise 1.8s ease-out forwards;
+  animation: feedback-pop-slide-in 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-sizing: border-box;
 }
 
 .feedback-pop.card {
@@ -831,7 +835,7 @@ button:disabled {
   border-color: var(--hd-red-bright);
   color: #ffd1c2;
   box-shadow: var(--hd-shadow-danger);
-  animation-name: feedback-pop-rise, feedback-damage-jolt;
+  animation-name: feedback-pop-slide-in, feedback-damage-jolt;
 }
 
 .feedback-pop.debuff {
@@ -892,7 +896,7 @@ button:disabled {
 }
 
 .feedback-layer:has(.feedback-pop.damage) + .vector-planet {
-  animation: planet-cube-turn 18s ease-in-out infinite, planet-hit-shake 520ms steps(2, jump-none);
+  animation: planet-cube-turn 18s ease-in-out infinite;
 }
 
 .feedback-layer:has(.feedback-pop.avert) + .vector-planet,
@@ -1162,6 +1166,7 @@ button:disabled {
 .meter-track > div {
   height: 100%;
   background: var(--hd-cyan);
+  transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .bottom-row {
@@ -1193,16 +1198,60 @@ button:disabled {
   overflow: hidden;
   color: var(--hd-text);
   text-align: left;
-  transition: transform 120ms ease, border-color 120ms ease;
+  transition: transform 200ms cubic-bezier(0.25, 0.8, 0.25, 1), border-color 200ms ease, box-shadow 200ms ease;
+  animation: card-draw-in 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+.hand-row .action-card:nth-child(1) { animation-delay: 0ms; }
+.hand-row .action-card:nth-child(2) { animation-delay: 60ms; }
+.hand-row .action-card:nth-child(3) { animation-delay: 120ms; }
+.hand-row .action-card:nth-child(4) { animation-delay: 180ms; }
+.hand-row .action-card:nth-child(5) { animation-delay: 240ms; }
+
 .action-card:hover:not(:disabled) {
-  transform: translate(-2px, -6px);
+  transform: translateY(-16px) scale(1.06) rotate(1deg);
   border-color: var(--hd-yellow);
+  box-shadow: 
+    0 12px 24px rgba(0, 0, 0, 0.5), 
+    0 0 16px rgba(242, 193, 78, 0.35);
+  z-index: 10;
+}
+
+.action-card:nth-child(even):hover:not(:disabled) {
+  transform: translateY(-16px) scale(1.06) rotate(-1deg);
+}
+
+.action-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0) 70%);
+  background-size: 200% 200%;
+  background-position: 200% 0;
+  transition: background-position 0.6s ease;
+  pointer-events: none;
+}
+
+.action-card:hover:not(:disabled)::before {
+  background-position: -100% 0;
+}
+
+.action-card.is-playing {
+  animation: card-play-exit 350ms cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  pointer-events: none;
 }
 
 .action-card:active:not(:disabled) {
-  animation: played-card-burst 360ms steps(2, jump-none);
+  transform: translateY(-4px) scale(0.96);
+  transition: transform 50ms ease;
+}
+
+.action-card:disabled {
+  filter: grayscale(1) brightness(0.65) contrast(0.95);
+  opacity: 0.55;
+  border-color: #2c2c38;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .card-head {
@@ -1543,6 +1592,24 @@ button:disabled {
   }
 }
 
+@keyframes feedback-pop-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(80px) scale(0.96);
+  }
+
+  12%,
+  82% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.97);
+  }
+}
+
 @keyframes feedback-damage-jolt {
   0%,
   100% {
@@ -1619,6 +1686,122 @@ button:disabled {
 
   75% {
     translate: -4px 0;
+  }
+}
+
+/* Custom enhanced feedback and polish animations */
+
+.planet-damage-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.8), inset 0 0 20px rgba(239, 68, 68, 0.6);
+  border: 5px solid rgba(239, 68, 68, 0.85);
+  opacity: 0;
+}
+
+.planet-stage.has-damage-flash .planet-damage-flash {
+  animation: local-damage-flash 600ms cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.planet-stage.has-damage-flash {
+  animation: stage-damage-shake 600ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes local-damage-flash {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes stage-damage-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-7px, 5px) rotate(-1.2deg); }
+  20% { transform: translate(7px, -5px) rotate(1.5deg); }
+  30% { transform: translate(-5px, -3px) rotate(-0.7deg); }
+  40% { transform: translate(5px, 5px) rotate(1.2deg); }
+  50% { transform: translate(-3px, -5px) rotate(-0.7deg); }
+  60% { transform: translate(3px, 3px) rotate(0.7deg); }
+  70% { transform: translate(-3px, 3px) rotate(-0.7deg); }
+  80% { transform: translate(1px, -1px) rotate(0deg); }
+  90% { transform: translate(-1px, 1px) rotate(0deg); }
+}
+
+@keyframes card-draw-in {
+  0% {
+    transform: translateY(100px) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes card-play-exit {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-130px) scale(0.65);
+    opacity: 0;
+  }
+}
+
+@keyframes index-gain-bounce {
+  0%, 100% { transform: scale(1); filter: none; }
+  30% { transform: scale(1.08); filter: brightness(1.25); }
+  60% { transform: scale(0.97); }
+}
+
+@keyframes index-loss-shake {
+  0%, 100% { transform: translateX(0); filter: none; }
+  15%, 45%, 75% { transform: translateX(-6px); filter: brightness(1.25) saturate(1.2); }
+  30%, 60%, 90% { transform: translateX(6px); }
+}
+
+.value-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.delta-badge {
+  position: absolute;
+  right: -38px;
+  font-family: "Press Start 2P", "JetBrains Mono", monospace;
+  font-size: 0.5rem;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  animation: delta-float 1000ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.delta-badge.gain {
+  color: #4ade80;
+  text-shadow: 0 0 4px rgba(74, 222, 128, 0.7);
+}
+
+.delta-badge.loss {
+  color: #f87171;
+  text-shadow: 0 0 4px rgba(248, 113, 113, 0.7);
+}
+
+@keyframes delta-float {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.9);
   }
 }
 

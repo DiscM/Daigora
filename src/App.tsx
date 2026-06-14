@@ -193,7 +193,8 @@ export function App() {
 
   return (
     <main className={`app-shell ${game.phase === 'gameOver' ? 'is-game-over' : ''}`}>
-      <section className="planet-stage" aria-label="Planet board">
+      <section className={`planet-stage ${flashes.health === 'loss' ? 'has-damage-flash' : ''}`} aria-label="Planet board">
+        <div className="planet-damage-flash" aria-hidden="true" />
         <div className="orbit-field" aria-hidden="true">
           <span />
           <span />
