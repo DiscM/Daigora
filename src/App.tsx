@@ -12,8 +12,9 @@ import type { IndexKey } from './game/types';
 
 const SAVE_KEY = 'heal-the-planet-save-v1';
 const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
+const DEFAULT_AIDS = ['educator', 'disaster-responder'];
 
-function loadGame(): GameState {
+function loadGame(): GameState | null {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) {
     try {
@@ -22,29 +23,40 @@ function loadGame(): GameState {
       localStorage.removeItem(SAVE_KEY);
     }
   }
-  return createGame();
+  return null;
 }
 
 export function App() {
-  const [game, setGame] = useState<GameState>(loadGame);
-  const [seed, setSeed] = useState(game.seed);
-  const [selectedAidIds, setSelectedAidIds] = useState<string[]>(game.selectedAidIds);
+  const [game, setGame] = useState<GameState | null>(loadGame);
+  const [seed, setSeed] = useState(game?.seed ?? 'earth-month');
+  const [selectedAidIds, setSelectedAidIds] = useState<string[]>(game?.selectedAidIds ?? DEFAULT_AIDS);
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+    if (game) localStorage.setItem(SAVE_KEY, JSON.stringify(game));
   }, [game]);
 
-  const selectedAids = useMemo(() => projectAids.filter((aid) => game.selectedAidIds.includes(aid.id)), [game.selectedAidIds]);
+  const selectedAids = useMemo(() => projectAids.filter((aid) => selectedAidIds.includes(aid.id)), [selectedAidIds]);
+  const gameAids = useMemo(() => projectAids.filter((aid) => game?.selectedAidIds.includes(aid.id)), [game?.selectedAidIds]);
 
-  function startNewGame() {
+  function startGameFromSetup() {
     const chosen = selectedAidIds.slice(0, 3);
-    setGame(createGame(seed.trim() || 'earth-month', chosen.length ? chosen : ['educator', 'disaster-responder']));
+    setGame(createGame(seed.trim() || 'earth-month', chosen.length ? chosen : DEFAULT_AIDS));
+  }
+
+  function openStartMenu() {
+    localStorage.removeItem(SAVE_KEY);
+    setGame(null);
+  }
+
+  function restartCurrentSetup() {
+    const currentAids = game?.selectedAidIds ?? selectedAidIds;
+    setSelectedAidIds(currentAids);
+    setGame(createGame(seed.trim() || 'earth-month', currentAids.length ? currentAids : DEFAULT_AIDS));
   }
 
   function randomizeSeed() {
     const next = `seed-${Math.floor(Math.random() * 99999)}`;
     setSeed(next);
-    setGame(createGame(next, selectedAidIds));
   }
 
   function toggleAid(id: string) {
@@ -53,6 +65,81 @@ export function App() {
       if (ids.length >= 3) return ids;
       return [...ids, id];
     });
+  }
+
+  function renderAidPicker(className = 'aid-picker') {
+    return (
+      <div className={className}>
+        {projectAids.map((aid) => (
+          <button
+            key={aid.id}
+            className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
+            disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
+            onClick={() => toggleAid(aid.id)}
+            title={`${aid.passive} Drawback: ${aid.drawback}`}
+          >
+            <strong>{aid.name.replace('The ', '')}</strong>
+            <span>{aid.role}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  if (!game) {
+    return (
+      <main className="start-shell">
+        <section className="start-planet" aria-label="Planet briefing">
+          <div className="orbit-field" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="vector-planet" aria-hidden="true">
+            <span className="planet-glow" />
+            <span className="planet-ocean" />
+            <span className="continent continent-a" />
+            <span className="continent continent-b" />
+            <span className="continent continent-c" />
+            <span className="continent continent-d" />
+            <span className="damage-zone damage-a" />
+            <span className="damage-zone damage-b" />
+            <span className="cloud-band cloud-a" />
+            <span className="cloud-band cloud-b" />
+          </div>
+        </section>
+        <section className="start-menu panel" aria-label="Start menu">
+          <p className="eyebrow">Earth Council Briefing</p>
+          <h1>Heal the Planet</h1>
+          <p>
+            Ten crisis waves are approaching. Build trust, repair ecosystems, keep the economy moving, and coordinate policy before the final cascading crisis arrives.
+          </p>
+          <div className="briefing-grid" aria-label="How to play">
+            <span>Play cards with AP.</span>
+            <span>Earn PP for policy cards.</span>
+            <span>Keep readiness above danger.</span>
+            <span>Survive the final wave.</span>
+          </div>
+          <div className="advisor-heading">
+            <h2>Choose up to 3 advisors</h2>
+            <strong>{selectedAidIds.length}/3</strong>
+          </div>
+          {renderAidPicker('advisor-picker')}
+          <div className="start-controls">
+            <label className="seed-control">
+              <span>Seed</span>
+              <input value={seed} onChange={(event) => setSeed(event.target.value)} />
+            </label>
+            <button className="tonal-button" onClick={randomizeSeed} title="Choose a random seed">
+              <Sparkles size={18} /> Random
+            </button>
+            <button className="filled-button start-button" onClick={startGameFromSetup}>
+              <Play size={18} /> Start Game
+            </button>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -81,7 +168,7 @@ export function App() {
           <span className="cloud-band cloud-b" />
         </div>
         <div className="aid-row">
-          {selectedAids.map((aid) => (
+          {gameAids.map((aid) => (
             <div className="aid-token" key={aid.id} title={`${aid.passive} Drawback: ${aid.drawback}`}>
               {aid.name.replace('The ', '')}
             </div>
@@ -113,7 +200,7 @@ export function App() {
 
         <section className="hand-row" aria-label="Action hand">
           {game.hand.map((card) => (
-            <ActionCard key={card.instanceId} game={game} instance={card} onPlay={() => setGame((state) => playCard(state, card.instanceId))} />
+            <ActionCard key={card.instanceId} game={game} instance={card} onPlay={() => setGame((state) => (state ? playCard(state, card.instanceId) : state))} />
           ))}
         </section>
 
@@ -138,29 +225,17 @@ export function App() {
                   <button className="tonal-button" onClick={randomizeSeed} title="Start a random seed">
                     <Sparkles size={18} /> Random
                   </button>
-                  <button className="icon-button" onClick={startNewGame} title="Restart with current setup">
+                  <button className="icon-button" onClick={restartCurrentSetup} title="Restart with current setup">
                     <RotateCcw size={18} />
                   </button>
-                  <button className="filled-button" onClick={startNewGame}>
+                  <button className="filled-button" onClick={openStartMenu}>
                     <Play size={18} /> New Game
                   </button>
                 </div>
-                <div className="aid-picker">
-                  {projectAids.map((aid) => (
-                    <button
-                      key={aid.id}
-                      className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
-                      disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
-                      onClick={() => toggleAid(aid.id)}
-                      title={`${aid.passive} Drawback: ${aid.drawback}`}
-                    >
-                      {aid.name.replace('The ', '')}
-                    </button>
-                  ))}
-                </div>
+                {renderAidPicker()}
               </div>
             </details>
-            <button className="end-turn" onClick={() => setGame((state) => endTurn(state))} disabled={game.phase !== 'play'}>
+            <button className="end-turn" onClick={() => setGame((state) => (state ? endTurn(state) : state))} disabled={game.phase !== 'play'}>
               End Turn
             </button>
           </div>
