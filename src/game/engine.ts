@@ -171,9 +171,9 @@ function checkLoss(state: GameState): void {
 function resolveCascadingIfNeeded(state: GameState): void {
   const critical = INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length;
   if (critical >= 2) {
-    applyHealth(state, -5);
+    applyHealth(state, -3);
     addStatusToDiscard(state, 'Apathy');
-    state.log = addLog(state, 'Cascading Disaster triggered: -5 Health and +1 Apathy.');
+    state.log = addLog(state, 'Cascading Disaster triggered: -3 Health and +1 Apathy.');
   }
 }
 
@@ -194,11 +194,11 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     rngState,
     phase: 'setup',
     turn: 0,
-    planetHealth: 20,
-    maxPlanetHealth: 20,
+    planetHealth: 24,
+    maxPlanetHealth: 24,
     actionPoints: 0,
     policyPoints: 0,
-    indexes: { trust: 3, ecology: 3, economy: 3, coordination: 3 },
+    indexes: { trust: 4, ecology: 4, economy: 4, coordination: 4 },
     selectedAidIds,
     crisisDeck,
     crisisDiscard: [],
@@ -227,7 +227,7 @@ export function startTurn(input: GameState): GameState {
   if (state.turn >= 10) return resolveFinalCrisis(state);
   state.phase = 'play';
   state.turn += 1;
-  state.actionPoints = 3;
+  state.actionPoints = state.turn >= 6 ? 4 : 3;
   state.incomingDamagePrevention = 0;
   state.thisTurnCostPenalty = { ...state.nextTurnCostPenalty };
   state.nextTurnCostPenalty = {};
@@ -372,21 +372,21 @@ export function endTurn(input: GameState): GameState {
 export function resolveFinalCrisis(input: GameState): GameState {
   const state = structuredClone(input) as GameState;
   state.phase = 'final';
-  let damage = 20;
-  if (state.indexes.trust >= 6) damage -= 3;
-  if (state.indexes.ecology >= 6) damage -= 4;
-  if (state.indexes.economy >= 6) damage -= 3;
-  if (state.indexes.coordination >= 6) damage -= 4;
-  if (INDEX_KEYS.every((key) => state.indexes[key] >= 6)) damage -= 3;
+  let damage = 16;
+  if (state.indexes.trust >= 5) damage -= 3;
+  if (state.indexes.ecology >= 5) damage -= 4;
+  if (state.indexes.economy >= 5) damage -= 3;
+  if (state.indexes.coordination >= 5) damage -= 4;
+  if (INDEX_KEYS.every((key) => state.indexes[key] >= 5)) damage -= 3;
   if (INDEX_KEYS.some((key) => state.indexes[key] <= 2)) damage += 3;
-  if (INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length >= 2) applyHealth(state, -5);
+  if (INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length >= 2) applyHealth(state, -3);
   applyHealth(state, -Math.max(0, damage));
 
-  const stableCount = INDEX_KEYS.filter((key) => state.indexes[key] >= 6).length;
+  const stableCount = INDEX_KEYS.filter((key) => state.indexes[key] >= 5).length;
   const vulnerableOrCritical = INDEX_KEYS.filter((key) => state.indexes[key] <= 5).length;
   let rating = 'Collapse';
   if (state.planetHealth > 10 && INDEX_KEYS.every((key) => state.indexes[key] >= 9)) rating = 'Regenerative Future';
-  else if (state.planetHealth > 0 && INDEX_KEYS.every((key) => state.indexes[key] >= 6)) rating = 'Resilient Future';
+  else if (state.planetHealth > 0 && INDEX_KEYS.every((key) => state.indexes[key] >= 5)) rating = 'Resilient Future';
   else if (state.planetHealth > 0 && stableCount >= 2) rating = 'Stabilization';
   else if (state.planetHealth > 0 && vulnerableOrCritical >= 2) rating = 'Survival';
   state.phase = 'gameOver';

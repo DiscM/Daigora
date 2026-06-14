@@ -35,15 +35,17 @@ export const cardById = Object.fromEntries(allCards.map((card) => [card.id, card
 
 export const starterDeckIds = [
   'community-workshop',
-  'community-workshop',
   'river-cleanup',
   'river-cleanup',
   'tree-canopy-program',
   'community-compost-hub',
   'emergency-response-network',
+  'mutual-aid-response',
   'repair-reuse-campaign',
   'solar-installation-project',
   'local-policy-petition',
+  'research-briefing',
+  'clean-infrastructure-act',
 ];
 
 export const crises: CrisisDefinition[] = [

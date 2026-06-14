@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Leaf, Menu, Play, RotateCcw, Settings, Sparkles } from 'lucide-react';
+import { Menu, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { projectAids } from './game/content';
 import { createGame, endTurn, playCard } from './game/engine';
 import type { GameState } from './game/types';
 import { Resource } from './components/Resource';
 import { IndexMeter } from './components/IndexMeter';
 import { ActionCard } from './components/ActionCard';
-import { DeckStack } from './components/DeckStack';
 import { ActiveProjects } from './components/ActiveProjects';
 import { CrisisPanel } from './components/CrisisPanel';
 import type { IndexKey } from './game/types';
@@ -108,13 +107,6 @@ export function App() {
             <Resource label="AP" value={game.actionPoints} kind="ap" />
             <Resource label="PP" value={game.policyPoints} kind="pp" />
           </div>
-          <div className="pile-zone" aria-label="Deck and discard">
-            <DeckStack label="Deck" value={game.deck.length} variant="deck" />
-            <DeckStack label="Discard" value={game.discard.length} variant="discard" />
-            <button className="status-button" type="button">
-              <Leaf size={16} /> Status
-            </button>
-          </div>
         </section>
 
         <CrisisPanel game={game} />
@@ -135,9 +127,6 @@ export function App() {
         <div className="side-actions">
           <ActiveProjects game={game} />
           <div className="quick-actions">
-            <button className="round-action" onClick={startNewGame} title="Restart with current setup">
-              <Settings size={24} />
-            </button>
             <details className="header-actions">
               <summary title="Game setup"><Menu size={26} /></summary>
               <div className="setup-popover">
@@ -161,6 +150,7 @@ export function App() {
                     <button
                       key={aid.id}
                       className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
+                      disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
                       onClick={() => toggleAid(aid.id)}
                       title={`${aid.passive} Drawback: ${aid.drawback}`}
                     >
@@ -170,10 +160,10 @@ export function App() {
                 </div>
               </div>
             </details>
+            <button className="end-turn" onClick={() => setGame((state) => endTurn(state))} disabled={game.phase !== 'play'}>
+              End Turn
+            </button>
           </div>
-          <button className="end-turn" onClick={() => setGame((state) => endTurn(state))} disabled={game.phase !== 'play'}>
-            End Turn
-          </button>
         </div>
       </section>
 
