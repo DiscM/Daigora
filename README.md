@@ -2,23 +2,6 @@
 
 An interactive, strategic planetary management card game built using **React**, **TypeScript**, and **Vite**. As the lead administrator of the Earth Council, your mission is to guide the planet through **10 critical turns** of escalating environmental, economic, and social crises. Build trust, repair ecosystems, maintain economic flow, and coordinate international policy to prevent a final, cascading global collapse.
 
----
-
-## 📸 Screenshots & User Interface
-
-### Desktop Dashboard Layout
-![Desktop Dashboard](screenshots/heal-planet-remake-desktop-1108x644-polished.png)
-
-### Wide View Dashboard Layout
-![Wide Dashboard](screenshots/heal-planet-remake-wide-1440x900-polished.png)
-
-### Mobile Responsive Layout
-![Mobile Layout](screenshots/heal-planet-remake-mobile-390x844-polished.png)
-
-### UI Command Shelves & Layout Studies
-![UI Variations Overview](screenshots/ui-layout-variations-overview.png)
-
----
 
 ## ⚙️ Core Game Mechanics
 
