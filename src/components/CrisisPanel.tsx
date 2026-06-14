@@ -6,6 +6,7 @@ const STATUS_TOOLTIPS: Record<string, string> = {
   Pollution: 'When drawn, lose 1 AP unless it is cleansed. It stays in hand as dead weight.',
   Misinformation: 'When drawn, Education and Policy cards cost more this turn.',
   Apathy: 'Retain. Cannot be played and stays in hand until a cleanse effect removes it.',
+  Backlash: 'When drawn, lose 1 Trust, then exhaust it from the deck.',
 };
 
 export function CrisisPanel({ game }: { game: GameState }) {
@@ -36,11 +37,6 @@ export function CrisisPanel({ game }: { game: GameState }) {
               </li>
             ))}
           </ul>
-          {currentCrisis.calamity && (
-            <div className={isCalamityMet(game) ? 'warning-note condition-met' : 'warning-note'}>
-              {currentCrisis.calamity.text}
-            </div>
-          )}
         </>
       ) : (
         <p>No active crisis.</p>
@@ -54,7 +50,7 @@ function splitSentences(text: string): string[] {
 }
 
 function renderStatusTooltips(text: string) {
-  const parts = text.split(/\b(Pollution|Misinformation|Apathy)\b/g);
+  const parts = text.split(/\b(Pollution|Misinformation|Apathy|Backlash)\b/g);
   return parts.map((part, index) => {
     const tooltip = STATUS_TOOLTIPS[part];
     if (!tooltip) return part;
@@ -70,10 +66,5 @@ function isCrisisSentenceMet(game: GameState, sentence: string): boolean {
   const lowerSentence = sentence.toLowerCase();
   if (game.crisisAvertedThisTurn && /\b(deal|damage|health)\b/.test(lowerSentence)) return true;
   if (game.currentCrisisId === 'deforestation-surge' && lowerSentence.includes('if untreated') && !game.untreatedDeforestation) return true;
-  return false;
-}
-
-function isCalamityMet(game: GameState): boolean {
-  if (game.currentCrisisId === 'industrial-pollution-corridor') return game.crisisAvertedThisTurn;
   return false;
 }

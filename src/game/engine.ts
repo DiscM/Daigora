@@ -311,6 +311,23 @@ function resolveCrisis(state: GameState, crisisId: string): void {
   resolveCascadingIfNeeded(state, true);
 }
 
+function hasStatusInActivePiles(state: GameState, status: StatusKind): boolean {
+  return [...state.hand, ...state.discard, ...state.deck].some((card) => findDefinition(card).name === status);
+}
+
+function updateCrisisAverted(state: GameState): void {
+  if (!state.currentCrisisId || state.crisisAvertedThisTurn) return;
+  const crisis = crisisById[state.currentCrisisId];
+  if (crisis.calamity && state.indexes[crisis.calamity.index] > crisis.calamity.threshold) {
+    state.crisisAvertedThisTurn = true;
+    return;
+  }
+  if (state.currentCrisisId === 'deforestation-surge' && !state.untreatedDeforestation) state.crisisAvertedThisTurn = true;
+  if (state.currentCrisisId === 'plastic-waste-surge' && !state.noEnvironmentalPlayedThisTurn) state.crisisAvertedThisTurn = true;
+  if (state.currentCrisisId === 'industrial-pollution-corridor' && !hasStatusInActivePiles(state, 'Pollution')) state.crisisAvertedThisTurn = true;
+  if (state.currentCrisisId === 'misleading-campaign' && !hasStatusInActivePiles(state, 'Misinformation')) state.crisisAvertedThisTurn = true;
+}
+
 export function getCardCost(state: GameState, card: CardDefinition): { ap: number; pp: number } {
   let ap = card.costAp ?? 0;
   let pp = card.costPp ?? 0;
@@ -366,6 +383,7 @@ export function playCard(input: GameState, instanceId: string): GameState {
     state.educationBonusUsedThisTurn = true;
   }
   if (card.type === 'Policy' && state.selectedAidIds.includes('policy-advocate')) state.policyPoints += 1;
+  updateCrisisAverted(state);
 
   if (card.keywords?.includes('Exhaust') || card.keywords?.includes('Ongoing')) state.exhausted.push(instance);
   else state.discard.push(instance);

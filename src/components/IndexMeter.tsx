@@ -8,9 +8,9 @@ const indexLabels: Record<IndexKey, string> = {
   coordination: 'Coordination',
 };
 
-export function IndexMeter({ indexKey, value }: { indexKey: IndexKey; value: number }) {
+export function IndexMeter({ indexKey, value, flash }: { indexKey: IndexKey; value: number; flash?: 'gain' | 'loss' }) {
   return (
-    <div className={`index-meter ${indexKey}`}>
+    <div className={`index-meter ${indexKey} ${flash ? `flash-${flash}` : ''}`}>
       <span className="index-icon">{indexIcon(indexKey)}</span>
       <div className="meter-label">
         <span>{indexLabels[indexKey]}</span>

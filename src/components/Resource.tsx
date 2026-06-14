@@ -1,8 +1,20 @@
 import { Droplet, Heart, Landmark } from 'lucide-react';
 
-export function Resource({ label, value, kind, tone }: { label: string; value: string | number; kind: 'turn' | 'health' | 'ap' | 'pp'; tone?: 'good' | 'danger' }) {
+export function Resource({
+  label,
+  value,
+  kind,
+  tone,
+  flash,
+}: {
+  label: string;
+  value: string | number;
+  kind: 'turn' | 'health' | 'ap' | 'pp';
+  tone?: 'good' | 'danger';
+  flash?: 'gain' | 'loss';
+}) {
   return (
-    <div className={`resource ${kind} ${tone ?? ''}`}>
+    <div className={`resource ${kind} ${tone ?? ''} ${flash ? `flash-${flash}` : ''}`}>
       <span className="resource-icon">{resourceIcon(kind)}</span>
       <span>{label}</span>
       <strong>{value}</strong>

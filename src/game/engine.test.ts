@@ -139,6 +139,40 @@ describe('Heal the Planet engine', () => {
     expect(afterTurn.log.some((entry) => entry.text === 'Averted 2 crisis damage.')).toBe(true);
   });
 
+  it('averts heat dome when coordination is above its calamity threshold after a card play', () => {
+    const state = createGame('heat-dome-avert-test', ['educator']);
+    state.currentCrisisId = 'heat-dome';
+    state.hand = [{ defId: 'clean-infrastructure-act', instanceId: 'policy' }];
+    state.pendingCrisisDamage = 2;
+    state.planetHealth = 10;
+    state.policyPoints = 2;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 2 };
+
+    const afterCard = playCard(state, 'policy');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterCard.indexes.coordination).toBeGreaterThan(3);
+    expect(afterCard.crisisAvertedThisTurn).toBe(true);
+    expect(afterTurn.planetHealth).toBe(10);
+  });
+
+  it('averts plastic waste surge when environmental work is played', () => {
+    const state = createGame('plastic-avert-test', ['educator']);
+    state.currentCrisisId = 'plastic-waste-surge';
+    state.hand = [{ defId: 'river-cleanup', instanceId: 'river' }];
+    state.pendingCrisisDamage = 2;
+    state.planetHealth = 10;
+    state.actionPoints = 3;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const afterCard = playCard(state, 'river');
+    const afterTurn = endTurn(afterCard);
+
+    expect(afterCard.crisisAvertedThisTurn).toBe(true);
+    expect(afterTurn.planetHealth).toBe(10);
+    expect(afterTurn.log.some((entry) => entry.text === 'Plastic Waste Surge added another Pollution.')).toBe(false);
+  });
+
   it('does not deal untreated deforestation damage when the crisis is averted', () => {
     const state = createGame('avert-deforestation-test', ['educator']);
     state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
