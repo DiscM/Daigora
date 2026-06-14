@@ -11,9 +11,7 @@ export class PlanetBoardScene extends Phaser.Scene {
   private atmosphere?: Phaser.GameObjects.Graphics;
   private damageLayer?: Phaser.GameObjects.Graphics;
   private readinessLayer?: Phaser.GameObjects.Graphics;
-  private starLayer?: Phaser.GameObjects.Graphics;
   private crisisText?: Phaser.GameObjects.Text;
-  private aidContainer?: Phaser.GameObjects.Container;
   private ready = false;
 
   constructor(initialState: GameState, planetUrl: string) {
@@ -28,8 +26,7 @@ export class PlanetBoardScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('rgba(11, 19, 38, 0)');
-    this.starLayer = this.add.graphics();
+    this.cameras.main.setBackgroundColor('rgba(0, 0, 0, 0)');
     this.readinessLayer = this.add.graphics();
     this.atmosphere = this.add.graphics();
     this.damageLayer = this.add.graphics();
@@ -42,7 +39,6 @@ export class PlanetBoardScene extends Phaser.Scene {
       align: 'center',
       shadow: { offsetX: 0, offsetY: 2, color: '#0b1326', blur: 4, fill: true },
     }).setOrigin(0.5).setDepth(20);
-    this.aidContainer = this.add.container(0, 0).setDepth(30);
 
     this.tweens.add({
       targets: this.planet,
@@ -71,10 +67,8 @@ export class PlanetBoardScene extends Phaser.Scene {
     const width = this.scale.width;
     const height = this.scale.height;
     const centerX = width / 2;
-    const centerY = height / 2 + Math.min(18, height * 0.04);
-    const radius = Math.min(width * 0.35, height * 0.43);
-
-    this.drawStars();
+    const centerY = height / 2 + Math.min(5, height * 0.015);
+    const radius = Math.min(width * 0.39, height * 0.49);
 
     if (this.planet) {
       const sourceSize = Math.max(this.planet.width, this.planet.height) || 1024;
@@ -88,20 +82,15 @@ export class PlanetBoardScene extends Phaser.Scene {
     this.drawCrisisLabel(centerX, centerY, radius);
   }
 
-  private drawStars() {
-    if (!this.starLayer) return;
-    this.starLayer.clear();
-  }
-
   private drawAtmosphere(x: number, y: number, radius: number) {
     if (!this.atmosphere) return;
     this.atmosphere.clear();
     this.atmosphere.setDepth(7);
-    this.atmosphere.lineStyle(Math.max(2, radius * 0.012), 0xd8f5ff, 0.5);
+    this.atmosphere.lineStyle(Math.max(2, radius * 0.012), 0xf8ffdf, 0.28);
     this.atmosphere.strokeCircle(x, y, radius * 0.94);
-    this.atmosphere.lineStyle(Math.max(7, radius * 0.035), 0x8bd2ff, 0.16);
+    this.atmosphere.lineStyle(Math.max(8, radius * 0.04), 0xbde6ff, 0.13);
     this.atmosphere.strokeCircle(x, y, radius * 1.02);
-    this.atmosphere.fillStyle(0xb7e9ff, 0.08);
+    this.atmosphere.fillStyle(0xf6ffd6, 0.06);
     this.atmosphere.fillCircle(x, y, radius * 1.05);
   }
 
@@ -117,11 +106,11 @@ export class PlanetBoardScene extends Phaser.Scene {
     };
     INDEX_KEYS.forEach((key, index) => {
       const value = this.currentState.indexes[key] / 10;
-      const start = Phaser.Math.DegToRad(212 + index * 24);
-      const end = start + Phaser.Math.DegToRad(18 + value * 34);
-      this.readinessLayer!.lineStyle(Math.max(3, radius * 0.014), colors[key], 0.36);
+      const start = Phaser.Math.DegToRad(218 + index * 23);
+      const end = start + Phaser.Math.DegToRad(14 + value * 31);
+      this.readinessLayer!.lineStyle(Math.max(3, radius * 0.012), colors[key], 0.32);
       this.readinessLayer!.beginPath();
-      this.readinessLayer!.arc(x, y, radius * (1.11 + index * 0.025), start, end, false);
+      this.readinessLayer!.arc(x, y, radius * (1.06 + index * 0.024), start, end, false);
       this.readinessLayer!.strokePath();
     });
   }
@@ -140,30 +129,7 @@ export class PlanetBoardScene extends Phaser.Scene {
 
   private drawCrisisLabel(x: number, y: number, radius: number) {
     if (!this.crisisText) return;
-    const phase = this.currentState.phase === 'gameOver' ? this.currentState.finalRating ?? 'Game Over' : '';
-    this.crisisText.setText(phase);
+    this.crisisText.setText('');
     this.crisisText.setPosition(x, Math.max(24, y - radius - 22));
-  }
-
-  private drawAidTokens(width: number, height: number) {
-    if (!this.aidContainer) return;
-    this.aidContainer.removeAll(true);
-    const names = this.currentState.selectedAidIds.map((id) => {
-      if (id === 'disaster-responder') return 'Responder';
-      return id.charAt(0).toUpperCase() + id.slice(1).replace('-', ' ');
-    });
-    const startX = 32;
-    const y = height - 36;
-    names.forEach((name, index) => {
-      const label = this.add.text(startX + index * 118, y, name, {
-        fontFamily: 'Avenir Next, Nunito Sans, sans-serif',
-        fontSize: '16px',
-        fontStyle: '800',
-        color: '#2f6a50',
-        backgroundColor: 'rgba(255, 248, 224, 0.86)',
-        padding: { left: 12, right: 12, top: 6, bottom: 6 },
-      }).setOrigin(0, 0.5);
-      this.aidContainer!.add(label);
-    });
   }
 }

@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heal the Planet UI Layout Variations</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Press+Start+2P&display=swap");
+
+      :root {
+        --ink: #e8f3d8;
+        --muted: #a5b79d;
+        --deep: #07120d;
+        --panel: #102018;
+        --panel-2: #172b20;
+        --edge: #3e5f42;
+        --black: #020503;
+        --leaf: #61c56e;
+        --moss: #9cc45f;
+        --water: #4fb2c7;
+        --sun: #f2c84b;
+        --soil: #a56d38;
+        --warn: #df7144;
+        --shadow: 5px 5px 0 var(--black);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "JetBrains Mono", monospace;
+        background:
+          linear-gradient(90deg, rgba(97, 197, 110, 0.08) 1px, transparent 1px),
+          linear-gradient(rgba(97, 197, 110, 0.08) 1px, transparent 1px),
+          radial-gradient(circle at 50% 10%, rgba(79, 178, 199, 0.18), transparent 32%),
+          var(--deep);
+        background-size: 22px 22px, 22px 22px, auto, auto;
+      }
+
+      .page {
+        display: grid;
+        gap: 28px;
+        padding: 28px;
+      }
+
+      .intro {
+        max-width: 1120px;
+        padding: 18px 20px;
+        border: 4px solid var(--edge);
+        background: #0c1a13;
+        box-shadow: var(--shadow);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2,
+      .brand,
+      .stat strong,
+      .button,
+      .tag {
+        font-family: "Press Start 2P", "JetBrains Mono", monospace;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        color: var(--sun);
+        font-size: 1.1rem;
+        line-height: 1.5;
+      }
+
+      .intro p {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .variant {
+        display: grid;
+        gap: 12px;
+      }
+
+      .variant-title {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        max-width: 1440px;
+      }
+
+      .variant-title h2 {
+        color: var(--leaf);
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+
+      .variant-title p {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.45;
+        text-align: right;
+      }
+
+      .screen {
+        width: min(1440px, calc(100vw - 56px));
+        aspect-ratio: 16 / 9;
+        min-height: 680px;
+        overflow: hidden;
+        position: relative;
+        border: 6px solid #1c3125;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(79, 178, 199, 0.18), transparent 30%),
+          radial-gradient(circle at 50% 76%, rgba(97, 197, 110, 0.11), transparent 34%),
+          #08120e;
+        box-shadow: 8px 8px 0 #000;
+      }
+
+      .panel,
+      .card,
+      .stat,
+      .button,
+      .deck,
+      .chip,
+      .project {
+        border: 4px solid var(--edge);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .brand {
+        color: var(--sun);
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+
+      .top-stats,
+      .stats-inline {
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .stat {
+        min-width: 112px;
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: #0b1711;
+      }
+
+      .stat small,
+      .panel-title,
+      .card-type {
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 3px;
+        color: var(--ink);
+        font-size: 0.82rem;
+      }
+
+      .icon {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 3px solid #07120d;
+        background: var(--leaf);
+        color: #07120d;
+        font-weight: 900;
+      }
+
+      .water .icon {
+        background: var(--water);
+      }
+
+      .sun .icon {
+        background: var(--sun);
+      }
+
+      .soil .icon {
+        background: var(--soil);
+        color: var(--ink);
+      }
+
+      .planet-wrap {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .planet {
+        position: relative;
+        width: min(50vh, 40vw);
+        aspect-ratio: 1;
+        border: 8px solid rgba(119, 210, 211, 0.28);
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.4), transparent 0 7%, transparent 8%),
+          radial-gradient(circle at 66% 64%, rgba(255, 255, 255, 0.28), transparent 0 8%, transparent 9%),
+          radial-gradient(circle at 30% 70%, rgba(86, 194, 113, 0.86), transparent 0 15%, transparent 16%),
+          radial-gradient(circle at 62% 35%, rgba(156, 196, 95, 0.88), transparent 0 19%, transparent 20%),
+          radial-gradient(circle at 52% 57%, rgba(72, 153, 93, 0.9), transparent 0 18%, transparent 19%),
+          radial-gradient(circle at 72% 70%, rgba(223, 113, 68, 0.65), transparent 0 7%, transparent 8%),
+          radial-gradient(circle at 29% 36%, rgba(223, 113, 68, 0.72), transparent 0 7%, transparent 8%),
+          radial-gradient(circle at 50% 50%, #35a9bb 0 64%, #16446c 65% 100%);
+        box-shadow:
+          0 0 0 14px rgba(79, 178, 199, 0.12),
+          0 0 64px rgba(79, 178, 199, 0.26);
+      }
+
+      .planet::before,
+      .planet::after {
+        content: "";
+        position: absolute;
+        left: 13%;
+        width: 58%;
+        height: 6%;
+        border-radius: 999px;
+        background: rgba(232, 243, 216, 0.7);
+        transform: rotate(-11deg);
+      }
+
+      .planet::before {
+        top: 25%;
+      }
+
+      .planet::after {
+        right: 8%;
+        bottom: 20%;
+        left: auto;
+        width: 42%;
+      }
+
+      .stars {
+        position: absolute;
+        inset: 0;
+        opacity: 0.7;
+        background-image:
+          radial-gradient(circle, rgba(232, 243, 216, 0.85) 0 2px, transparent 2.5px),
+          radial-gradient(circle, rgba(79, 178, 199, 0.7) 0 1px, transparent 1.8px);
+        background-position: 20px 40px, 90px 80px;
+        background-size: 130px 118px, 180px 160px;
+      }
+
+      .crisis h3,
+      .card h3 {
+        color: var(--ink);
+        font-size: 1rem;
+        line-height: 1.25;
+      }
+
+      .crisis p,
+      .card p {
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.35;
+      }
+
+      .crisis-art {
+        height: 112px;
+        border: 3px solid var(--edge);
+        background:
+          linear-gradient(180deg, #6bb9c9 0 46%, #314330 46% 100%);
+        box-shadow: inset 0 -10px 0 rgba(0, 0, 0, 0.18);
+      }
+
+      .meter {
+        display: grid;
+        grid-template-columns: 34px 1fr 34px;
+        gap: 9px;
+        align-items: center;
+      }
+
+      .meter strong {
+        color: var(--ink);
+      }
+
+      .ticks {
+        height: 13px;
+        border: 2px solid var(--edge);
+        background:
+          linear-gradient(90deg, var(--leaf) var(--fill, 50%), transparent 0),
+          repeating-linear-gradient(90deg, transparent 0 9%, rgba(232, 243, 216, 0.35) 9% 10%);
+      }
+
+      .hand {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        min-height: 142px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .card.cost-2 {
+        border-color: var(--moss);
+      }
+
+      .card.cost-3 {
+        border-color: var(--water);
+      }
+
+      .cost {
+        display: inline-grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 3px solid #07120d;
+        background: var(--water);
+        color: #07120d;
+        font-weight: 900;
+      }
+
+      .button {
+        display: grid;
+        min-height: 80px;
+        place-items: center;
+        color: var(--ink);
+        background: #254026;
+        font-size: 0.84rem;
+      }
+
+      .deck {
+        display: grid;
+        min-height: 92px;
+        place-items: center;
+        color: var(--muted);
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .count {
+        color: var(--sun);
+        font-family: "Press Start 2P";
+      }
+
+      .variant-a {
+        display: grid;
+        grid-template-rows: 76px 1fr 176px;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .variant-a .top {
+        display: grid;
+        grid-template-columns: 300px 1fr 150px;
+        gap: 14px;
+      }
+
+      .variant-a .mid {
+        display: grid;
+        grid-template-columns: 270px 1fr 280px;
+        gap: 14px;
+        min-height: 0;
+      }
+
+      .variant-a .bottom {
+        display: grid;
+        grid-template-columns: 190px 1fr 170px;
+        gap: 14px;
+      }
+
+      .variant-a .planet {
+        width: min(46vh, 34vw);
+      }
+
+      .variant-b {
+        display: grid;
+        grid-template-columns: 1fr 330px;
+        grid-template-rows: 68px 1fr 154px;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .variant-b .top {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 260px 1fr 116px;
+        gap: 12px;
+      }
+
+      .variant-b .planet-wrap {
+        grid-row: 2 / 4;
+        border: 4px solid var(--edge);
+        background: #091711;
+        box-shadow: var(--shadow);
+      }
+
+      .variant-b .planet {
+        width: min(58vh, 44vw);
+      }
+
+      .variant-b .right-stack {
+        display: grid;
+        gap: 12px;
+        min-height: 0;
+      }
+
+      .variant-b .bottom-right {
+        display: grid;
+        gap: 12px;
+        grid-template-rows: 1fr 72px;
+      }
+
+      .variant-b .hand {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .variant-c {
+        display: grid;
+        grid-template-columns: 116px 1fr 300px;
+        grid-template-rows: 68px 1fr 150px;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .variant-c .brand {
+        grid-column: 1 / 3;
+      }
+
+      .variant-c .top-stats {
+        grid-column: 3;
+      }
+
+      .variant-c .rail {
+        display: grid;
+        gap: 10px;
+        grid-row: 2 / 4;
+      }
+
+      .variant-c .planet-wrap {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .variant-c .planet {
+        width: min(54vh, 42vw);
+      }
+
+      .variant-c .side-drawer {
+        grid-column: 3;
+        grid-row: 2 / 4;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 12px;
+      }
+
+      .variant-c .hand {
+        grid-column: 2;
+        grid-row: 3;
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .variant-d {
+        display: grid;
+        grid-template-rows: 64px 1fr 118px;
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .variant-d .top {
+        display: grid;
+        grid-template-columns: 260px auto 1fr 124px;
+        gap: 10px;
+      }
+
+      .variant-d .arena {
+        position: relative;
+        min-height: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .variant-d .planet {
+        width: min(58vh, 46vw);
+      }
+
+      .floating-crisis,
+      .floating-meters,
+      .floating-projects {
+        position: absolute;
+      }
+
+      .floating-crisis {
+        left: 18px;
+        top: 24px;
+        width: 240px;
+      }
+
+      .floating-meters {
+        right: 18px;
+        top: 24px;
+        width: 255px;
+      }
+
+      .floating-projects {
+        right: 18px;
+        bottom: 22px;
+        width: 255px;
+      }
+
+      .variant-d .bottom {
+        display: grid;
+        grid-template-columns: 130px 1fr 150px;
+        gap: 10px;
+      }
+
+      .variant-e {
+        display: grid;
+        grid-template-rows: 1fr 178px;
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .variant-e .theatre {
+        position: relative;
+        min-height: 0;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border: 4px solid var(--edge);
+        background:
+          radial-gradient(circle at 50% 45%, rgba(79, 178, 199, 0.16), transparent 34%),
+          radial-gradient(circle at 28% 32%, rgba(242, 200, 75, 0.08), transparent 22%),
+          #07120d;
+        box-shadow: var(--shadow);
+      }
+
+      .variant-e .planet {
+        width: min(68vh, 48vw);
+      }
+
+      .art-callout {
+        position: absolute;
+        color: rgba(232, 243, 216, 0.42);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .callout-a {
+        left: 7%;
+        top: 18%;
+      }
+
+      .callout-b {
+        right: 7%;
+        top: 28%;
+      }
+
+      .callout-c {
+        left: 12%;
+        bottom: 18%;
+      }
+
+      .sprite-marker {
+        position: absolute;
+        display: grid;
+        width: 54px;
+        height: 54px;
+        place-items: center;
+        border: 4px solid var(--edge);
+        background: #183820;
+        color: var(--sun);
+        box-shadow: var(--shadow);
+        font-weight: 900;
+      }
+
+      .sprite-a {
+        left: 24%;
+        top: 23%;
+      }
+
+      .sprite-b {
+        right: 25%;
+        bottom: 28%;
+      }
+
+      .variant-e .bottom-console {
+        display: grid;
+        grid-template-columns: 178px 150px 1fr 190px 132px;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .mini-brand {
+        display: grid;
+        gap: 8px;
+        align-content: center;
+        padding: 12px;
+      }
+
+      .mini-brand .brand {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        font-size: 0.78rem;
+      }
+
+      .compact-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .compact-stats .stat {
+        min-width: 0;
+        grid-template-columns: 24px 1fr;
+        padding: 6px;
+      }
+
+      .compact-stats .icon {
+        width: 22px;
+        height: 22px;
+        border-width: 2px;
+        font-size: 0.68rem;
+      }
+
+      .compact-stats strong {
+        font-size: 0.62rem;
+      }
+
+      .console-crisis {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .console-crisis h3 {
+        font-size: 0.9rem;
+      }
+
+      .console-crisis p {
+        font-size: 0.72rem;
+      }
+
+      .variant-e .hand {
+        grid-template-columns: repeat(5, minmax(100px, 1fr));
+        gap: 9px;
+      }
+
+      .variant-e .card {
+        min-height: 0;
+        padding: 9px;
+        gap: 6px;
+      }
+
+      .variant-e .card h3 {
+        font-size: 0.88rem;
+      }
+
+      .variant-e .card p {
+        font-size: 0.7rem;
+      }
+
+      .bottom-meters {
+        display: grid;
+        gap: 7px;
+        padding: 10px;
+      }
+
+      .bottom-meters .meter {
+        grid-template-columns: 24px 1fr 24px;
+        gap: 6px;
+      }
+
+      .bottom-meters .icon {
+        width: 24px;
+        height: 24px;
+        border-width: 2px;
+        font-size: 0.72rem;
+      }
+
+      .bottom-meters .ticks {
+        height: 9px;
+      }
+
+      .variant-e .button {
+        min-height: 0;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .panel-title {
+        margin-bottom: 12px;
+        color: var(--sun);
+      }
+
+      .meters {
+        display: grid;
+        gap: 14px;
+      }
+
+      .crisis {
+        display: grid;
+        gap: 12px;
+      }
+
+      .two-decks {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .projects {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .project,
+      .chip {
+        padding: 8px 10px;
+        color: var(--ink);
+        font-size: 0.8rem;
+        font-weight: 800;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 8px 10px;
+        border: 3px solid var(--edge);
+        background: #0b1711;
+        color: var(--leaf);
+        font-size: 0.62rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="intro">
+        <h1>Heal the Planet - Layout Variation Mockups</h1>
+        <p>Four retro Earth Month layout directions using the same game state. These are static mockups for choosing the next UI structure before implementation.</p>
+      </section>
+
+      <section class="variant">
+        <div class="variant-title">
+          <h2>A. DeckMental Grid</h2>
+          <p>Most board-game-like. Clear zones, dense information, less planet dominance.</p>
+        </div>
+        <div class="screen variant-a" id="variation-a">
+          <div class="stars"></div>
+          <div class="top">
+            <div class="panel brand">Heal the Planet</div>
+            <div class="top-stats">
+              <div class="stat"><span class="icon">T</span><span><small>Turn</small><strong>4/10</strong></span></div>
+              <div class="stat"><span class="icon">♥</span><span><small>Health</small><strong>16/20</strong></span></div>
+              <div class="stat water"><span class="icon">AP</span><span><small>Action</small><strong>3</strong></span></div>
+              <div class="stat sun"><span class="icon">PP</span><span><small>Policy</small><strong>1</strong></span></div>
+            </div>
+            <div class="button">Menu</div>
+          </div>
+          <div class="mid">
+            <div class="panel crisis">
+              <div class="tag">Current Crisis</div>
+              <div class="crisis-art"></div>
+              <h3>Industrial Pollution Corridor</h3>
+              <p>-2 Health. Industrial projects cost +1 AP this turn.</p>
+            </div>
+            <div class="planet-wrap"><div class="planet"></div></div>
+            <div class="panel meters">
+              <div class="panel-title">Readiness</div>
+              <div class="meter"><span class="icon">P</span><strong>Trust</strong><span class="count">4</span><div class="ticks" style="--fill: 40%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon">L</span><strong>Ecology</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon soil">$</span><strong>Economy</strong><span class="count">5</span><div class="ticks" style="--fill: 50%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon water">C</span><strong>Coordination</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+            </div>
+          </div>
+          <div class="bottom">
+            <div class="two-decks"><div class="deck">Deck<br><span class="count">18</span></div><div class="deck">Discard<br><span class="count">7</span></div></div>
+            <div class="hand">
+              <div class="card"><span class="cost">1</span><span class="card-type">Environmental</span><h3>River Cleanup</h3><p>Remove 1 pollution. Gain 2 ecology.</p></div>
+              <div class="card"><span class="cost">1</span><span class="card-type">Education</span><h3>Community Workshop</h3><p>Gain 2 trust. Draw 1 card.</p></div>
+              <div class="card cost-2"><span class="cost">2</span><span class="card-type">Emergency</span><h3>Emergency Network</h3><p>Prevent 2 damage this turn.</p></div>
+              <div class="card cost-3"><span class="cost">2</span><span class="card-type">Technology</span><h3>Renewable Grid</h3><p>Gain 2 economy. Draw 1 card.</p></div>
+              <div class="card cost-2"><span class="cost">1</span><span class="card-type">Environmental</span><h3>Tree Canopy</h3><p>Gain 2 ecology. Gain 1 trust.</p></div>
+            </div>
+            <div class="button">End Turn</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant">
+        <div class="variant-title">
+          <h2>B. Planet First</h2>
+          <p>The planet gets the biggest permanent footprint. Crisis/readiness become a right-side command stack.</p>
+        </div>
+        <div class="screen variant-b" id="variation-b">
+          <div class="stars"></div>
+          <div class="top">
+            <div class="panel brand">Heal the Planet</div>
+            <div class="stats-inline">
+              <div class="stat"><span class="icon">T</span><span><small>Turn</small><strong>4/10</strong></span></div>
+              <div class="stat"><span class="icon">♥</span><span><small>Health</small><strong>16/20</strong></span></div>
+              <div class="stat water"><span class="icon">AP</span><span><small>AP</small><strong>3</strong></span></div>
+              <div class="stat sun"><span class="icon">PP</span><span><small>PP</small><strong>1</strong></span></div>
+            </div>
+            <div class="button">Menu</div>
+          </div>
+          <div class="planet-wrap"><div class="planet"></div></div>
+          <div class="right-stack">
+            <div class="panel crisis">
+              <div class="tag">Current Crisis</div>
+              <h3>Industrial Pollution Corridor</h3>
+              <p>-2 Health. Add pollution if Ecology is below 4.</p>
+            </div>
+            <div class="panel meters">
+              <div class="panel-title">Readiness</div>
+              <div class="meter"><span class="icon">P</span><strong>Trust</strong><span class="count">4</span><div class="ticks" style="--fill: 40%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon">L</span><strong>Ecology</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon soil">$</span><strong>Economy</strong><span class="count">5</span><div class="ticks" style="--fill: 50%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon water">C</span><strong>Coordination</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+            </div>
+          </div>
+          <div class="bottom-right">
+            <div class="hand">
+              <div class="card"><span class="cost">1</span><h3>River Cleanup</h3><p>Remove pollution. Gain ecology.</p></div>
+              <div class="card"><span class="cost">1</span><h3>Workshop</h3><p>Gain trust. Draw card.</p></div>
+            </div>
+            <div class="button">End Turn</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant">
+        <div class="variant-title">
+          <h2>C. Drawer Strategy</h2>
+          <p>Persistent left rail for deck/status. Current details live in the right drawer; the center stays cleaner.</p>
+        </div>
+        <div class="screen variant-c" id="variation-c">
+          <div class="stars"></div>
+          <div class="panel brand">Heal the Planet</div>
+          <div class="top-stats">
+            <div class="stat"><span class="icon">T</span><span><small>Turn</small><strong>4</strong></span></div>
+            <div class="stat water"><span class="icon">AP</span><span><small>AP</small><strong>3</strong></span></div>
+          </div>
+          <div class="rail">
+            <div class="deck">Deck<br><span class="count">18</span></div>
+            <div class="deck">Discard<br><span class="count">7</span></div>
+            <div class="deck">Status<br><span class="count">2</span></div>
+          </div>
+          <div class="planet-wrap"><div class="planet"></div></div>
+          <div class="side-drawer">
+            <div class="panel crisis">
+              <div class="tag">Current Crisis</div>
+              <h3>Industrial Pollution Corridor</h3>
+              <p>-2 Health. Industrial projects cost +1 AP.</p>
+            </div>
+            <div class="panel meters">
+              <div class="panel-title">Readiness</div>
+              <div class="meter"><span class="icon">P</span><strong>Trust</strong><span class="count">4</span><div class="ticks" style="--fill: 40%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon">L</span><strong>Ecology</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon soil">$</span><strong>Economy</strong><span class="count">5</span><div class="ticks" style="--fill: 50%; grid-column: 2 / 4"></div></div>
+              <div class="button">End Turn</div>
+            </div>
+          </div>
+          <div class="hand">
+            <div class="card"><span class="cost">1</span><h3>River Cleanup</h3><p>Remove pollution. Gain 2 ecology.</p></div>
+            <div class="card"><span class="cost">1</span><h3>Workshop</h3><p>Gain trust. Draw 1 card.</p></div>
+            <div class="card cost-2"><span class="cost">2</span><h3>Network</h3><p>Prevent 2 damage.</p></div>
+            <div class="card cost-3"><span class="cost">2</span><h3>Grid</h3><p>Gain economy. Draw.</p></div>
+            <div class="card cost-2"><span class="cost">1</span><h3>Canopy</h3><p>Gain ecology and trust.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant">
+        <div class="variant-title">
+          <h2>D. Cinematic Minimal HUD</h2>
+          <p>Most planet-focused. Panels float as compact overlays, with the full hand still available at the bottom.</p>
+        </div>
+        <div class="screen variant-d" id="variation-d">
+          <div class="stars"></div>
+          <div class="top">
+            <div class="panel brand">Heal the Planet</div>
+            <div class="stat"><span class="icon">T</span><span><small>Turn</small><strong>4/10</strong></span></div>
+            <div class="stats-inline">
+              <div class="stat"><span class="icon">♥</span><span><small>Health</small><strong>16/20</strong></span></div>
+              <div class="stat water"><span class="icon">AP</span><span><small>AP</small><strong>3</strong></span></div>
+              <div class="stat sun"><span class="icon">PP</span><span><small>PP</small><strong>1</strong></span></div>
+            </div>
+            <div class="button">Menu</div>
+          </div>
+          <div class="arena">
+            <div class="planet"></div>
+            <div class="panel crisis floating-crisis">
+              <div class="tag">Crisis</div>
+              <h3>Industrial Pollution</h3>
+              <p>-2 Health. +1 AP cost.</p>
+            </div>
+            <div class="panel meters floating-meters">
+              <div class="meter"><span class="icon">P</span><strong>Trust</strong><span class="count">4</span></div>
+              <div class="meter"><span class="icon">L</span><strong>Ecology</strong><span class="count">6</span></div>
+              <div class="meter"><span class="icon soil">$</span><strong>Economy</strong><span class="count">5</span></div>
+              <div class="meter"><span class="icon water">C</span><strong>Coord</strong><span class="count">6</span></div>
+            </div>
+            <div class="panel floating-projects">
+              <div class="panel-title">Active Projects</div>
+              <div class="projects"><span class="project">Wind 2</span><span class="project">Canopy 1</span><span class="project">Trust 2</span></div>
+            </div>
+          </div>
+          <div class="bottom">
+            <div class="two-decks"><div class="deck">Deck<br><span class="count">18</span></div></div>
+            <div class="hand">
+              <div class="card"><span class="cost">1</span><h3>River Cleanup</h3><p>Remove pollution. Gain ecology.</p></div>
+              <div class="card"><span class="cost">1</span><h3>Workshop</h3><p>Gain trust. Draw.</p></div>
+              <div class="card cost-2"><span class="cost">2</span><h3>Network</h3><p>Prevent damage.</p></div>
+              <div class="card cost-3"><span class="cost">2</span><h3>Grid</h3><p>Gain economy.</p></div>
+              <div class="card cost-2"><span class="cost">1</span><h3>Canopy</h3><p>Gain ecology.</p></div>
+            </div>
+            <div class="button">End Turn</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="variant">
+        <div class="variant-title">
+          <h2>E. Bottom Command Shelf</h2>
+          <p>All persistent UI lives along the bottom from left to right, leaving the planet area open for animation, events, and art.</p>
+        </div>
+        <div class="screen variant-e" id="variation-e">
+          <div class="theatre">
+            <div class="stars"></div>
+            <span class="art-callout callout-a">animated crisis plume</span>
+            <span class="art-callout callout-b">project effects</span>
+            <span class="art-callout callout-c">orbiting card sparks</span>
+            <span class="sprite-marker sprite-a">!</span>
+            <span class="sprite-marker sprite-b">+</span>
+            <div class="planet"></div>
+          </div>
+          <div class="bottom-console">
+            <div class="panel mini-brand">
+              <div class="brand">Heal the Planet</div>
+              <div class="compact-stats">
+                <div class="stat"><span class="icon">T</span><span><small>Turn</small><strong>4/10</strong></span></div>
+                <div class="stat"><span class="icon">♥</span><span><small>HP</small><strong>16</strong></span></div>
+                <div class="stat water"><span class="icon">AP</span><span><small>AP</small><strong>3</strong></span></div>
+                <div class="stat sun"><span class="icon">PP</span><span><small>PP</small><strong>1</strong></span></div>
+              </div>
+            </div>
+            <div class="panel console-crisis">
+              <div class="tag">Crisis</div>
+              <h3>Industrial Pollution</h3>
+              <p>-2 Health. +1 industrial AP.</p>
+            </div>
+            <div class="hand">
+              <div class="card"><span class="cost">1</span><h3>River Cleanup</h3><p>Remove pollution. Gain ecology.</p></div>
+              <div class="card"><span class="cost">1</span><h3>Workshop</h3><p>Gain trust. Draw.</p></div>
+              <div class="card cost-2"><span class="cost">2</span><h3>Network</h3><p>Prevent damage.</p></div>
+              <div class="card cost-3"><span class="cost">2</span><h3>Grid</h3><p>Gain economy.</p></div>
+              <div class="card cost-2"><span class="cost">1</span><h3>Canopy</h3><p>Gain ecology.</p></div>
+            </div>
+            <div class="panel bottom-meters">
+              <div class="meter"><span class="icon">P</span><strong>Trust</strong><span class="count">4</span><div class="ticks" style="--fill: 40%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon">L</span><strong>Eco</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon soil">$</span><strong>Econ</strong><span class="count">5</span><div class="ticks" style="--fill: 50%; grid-column: 2 / 4"></div></div>
+              <div class="meter"><span class="icon water">C</span><strong>Coord</strong><span class="count">6</span><div class="ticks" style="--fill: 60%; grid-column: 2 / 4"></div></div>
+            </div>
+            <div class="button">End Turn</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
