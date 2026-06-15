@@ -1420,65 +1420,6 @@ button:disabled {
     inset -30px -36px 0 rgba(0, 0, 0, 0.22);
 }
 
-.stage-callout,
-.stage-marker {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.stage-callout {
-  color: rgba(229, 244, 222, 0.45);
-  font-size: clamp(0.56rem, 0.8vw, 0.78rem);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.callout-crisis {
-  left: 7%;
-  top: 18%;
-}
-
-.callout-projects {
-  right: 7%;
-  top: 28%;
-}
-
-.callout-cards {
-  left: 12%;
-  bottom: 18%;
-}
-
-.stage-marker {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 4px solid var(--hd-border);
-  color: var(--hd-yellow);
-  background: #183820;
-  box-shadow: var(--hd-shadow-warm);
-  font-family: "Press Start 2P", "JetBrains Mono", monospace;
-  font-size: 0.72rem;
-}
-
-.marker-crisis {
-  left: 24%;
-  top: 23%;
-  color: var(--hd-red-bright);
-  box-shadow: var(--hd-shadow-danger);
-}
-
-.marker-project {
-  right: 25%;
-  bottom: 28%;
-}
-
-.marker-crisis,
-.marker-project {
-  animation: stage-marker-pulse 1.6s steps(2, jump-none) infinite;
-}
-
 @keyframes planet-cube-turn {
   0% {
     transform: perspective(900px) rotateX(1deg) rotateY(-8deg) rotateZ(0deg);
@@ -1560,17 +1501,6 @@ button:disabled {
 @keyframes orbit-counter-drift {
   to {
     transform: rotate(-374deg);
-  }
-}
-
-@keyframes stage-marker-pulse {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-4px);
   }
 }
 
@@ -2391,8 +2321,6 @@ button:disabled {
   .continent,
   .damage-zone,
   .cloud-band,
-  .marker-crisis,
-  .marker-project,
   .feedback-pop,
   .resource.flash-gain,
   .resource.flash-loss,
@@ -2447,10 +2375,6 @@ button:disabled {
 
   .vector-planet {
     width: min(66vw, 430px);
-  }
-
-  .stage-callout {
-    display: none;
   }
 
   .bottom-console .crisis-panel,

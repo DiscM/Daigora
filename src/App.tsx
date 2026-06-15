@@ -200,11 +200,6 @@ export function App() {
           <span />
           <span />
         </div>
-        <div className="stage-callout callout-crisis">Crisis effects</div>
-        <div className="stage-callout callout-projects">Project effects</div>
-        <div className="stage-callout callout-cards">Card sparks</div>
-        <div className="stage-marker marker-crisis">!</div>
-        <div className="stage-marker marker-project">+</div>
         <div className="feedback-layer" aria-live="polite">
           {feedback.map((item) => (
             <div className={`feedback-pop ${item.kind}`} key={item.id}>
