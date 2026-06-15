@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from './content';
-import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, playCard, resolveFinalCrisis, startTurn } from './engine';
+import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, getLegalActions, playCard, resolveFinalCrisis, startTurn } from './engine';
 import type { GameState } from './types';
 
 function findCard(state: GameState, defId: string) {
@@ -147,6 +147,22 @@ describe('Heal the Planet engine', () => {
     expect(getCardCost(state, cardById['solar-installation-project'])).toEqual({ ap: 0, pp: 0 });
   });
 
+  it('applies the Engineer drawback to Trust gains before Education is played', () => {
+    const state = createGame('engineer-drawback-test', ['engineer']);
+    state.hand = [
+      { defId: 'emergency-response-network', instanceId: 'emergency' },
+      { defId: 'local-policy-petition', instanceId: 'petition' },
+    ];
+    state.actionPoints = 3;
+    state.indexes.trust = 4;
+
+    const afterEmergency = playCard(state, 'emergency');
+    const afterEducation = playCard(afterEmergency, 'petition');
+
+    expect(afterEmergency.indexes.trust).toBe(4);
+    expect(afterEducation.indexes.trust).toBe(5);
+  });
+
   it('applies the Policy Advocate bonus when Policy cards are played', () => {
     const state = createGame('policy-advocate-benefit-test', ['policy-advocate']);
     state.hand = [{ defId: 'regional-response-pact', instanceId: 'pact' }];
@@ -157,10 +173,70 @@ describe('Heal the Planet engine', () => {
     expect(next.policyPoints).toBe(1);
   });
 
+  it('applies the Policy Advocate drawback when Coordination drops below three', () => {
+    const state = createGame('policy-advocate-drawback-test', ['policy-advocate']);
+    state.indexes.coordination = 3;
+    state.indexes.trust = 5;
+    state.crisisDeck = ['diplomatic-gridlock'];
+
+    const next = startTurn(state);
+
+    expect(next.indexes.coordination).toBe(0);
+    expect(next.indexes.trust).toBe(4);
+  });
+
   it('applies the Disaster Responder prevention at the start of each turn', () => {
     const state = createGame('disaster-responder-benefit-test', ['disaster-responder']);
 
     expect(state.incomingDamagePrevention).toBe(1);
+  });
+
+  it('applies the Disaster Responder drawback by blocking ongoing shields', () => {
+    const state = createGame('disaster-responder-drawback-test', ['disaster-responder']);
+    state.hand = [{ defId: 'renewable-grid-buildout', instanceId: 'grid' }];
+    state.actionPoints = 3;
+
+    const next = playCard(state, 'grid');
+
+    expect(next.ongoing).toEqual([]);
+    expect(next.log.some((entry) => entry.text === 'Disaster Responder drawback blocked an ongoing shield.')).toBe(true);
+  });
+
+  it('uses deterministic status instance ids for seeded games', () => {
+    const a = createGame('status-id-test', ['educator']);
+    const b = createGame('status-id-test', ['educator']);
+    a.indexes.trust = 1;
+    b.indexes.trust = 1;
+
+    const nextA = endTurn(a);
+    const nextB = endTurn(b);
+
+    expect(nextA.discard.map((card) => card.instanceId)).toEqual(nextB.discard.map((card) => card.instanceId));
+  });
+
+  it('applies Delay as a Technology and Policy cost penalty when drawn', () => {
+    const state = createGame('delay-test', ['educator']);
+    state.deck = [{ defId: 'status-delay', instanceId: 'delay' }];
+    state.discard = [];
+    state.hand = [];
+
+    const next = startTurn(state);
+
+    expect(next.thisTurnCostPenalty.Technology).toBe(1);
+    expect(next.thisTurnCostPenalty.Policy).toBe(1);
+    expect(next.exhausted.some((card) => card.instanceId === 'delay')).toBe(true);
+  });
+
+  it('applies ongoing shields to matching crisis damage', () => {
+    const state = createGame('ongoing-shield-test', ['educator']);
+    state.ongoing = [{ source: 'card', tag: 'climate', amount: 1 }];
+    state.crisisDeck = ['heat-dome'];
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const next = startTurn(state);
+
+    expect(next.pendingCrisisDamage).toBe(1);
+    expect(next.log.some((entry) => entry.text === 'Ongoing projects prevented 1 crisis damage.')).toBe(true);
   });
 
   it('prevents later damage during the same turn', () => {
@@ -333,4 +409,37 @@ describe('Heal the Planet engine', () => {
     expect(next.indexes.coordination).toBe(3); // Lost 2 coordination due to calamity
     expect(next.indexes.trust).toBe(1); // Baseline: -3 Trust (4 -> 1)
   });
+
+  it('can simulate deterministic games across advisor sets without stalling', () => {
+    const advisorSets = [
+      ['educator', 'disaster-responder'],
+      ['ecologist', 'engineer', 'policy-advocate'],
+      ['educator', 'ecologist', 'engineer'],
+      ['educator', 'policy-advocate', 'disaster-responder'],
+    ];
+    const results = advisorSets.flatMap((aids) => (
+      Array.from({ length: 5 }, (_, index) => simulateGreedyGame(`sim-${aids.join('-')}-${index}`, aids))
+    ));
+
+    expect(results).toHaveLength(20);
+    expect(results.every((state) => state.phase === 'gameOver')).toBe(true);
+    expect(results.some((state) => state.finalRating !== 'Collapse')).toBe(true);
+  });
 });
+
+function simulateGreedyGame(seed: string, advisorIds: string[]): GameState {
+  let state = createGame(seed, advisorIds);
+  let guard = 0;
+  while (state.phase !== 'gameOver' && guard < 200) {
+    let legalActions = getLegalActions(state);
+    while (legalActions.length > 0 && guard < 200) {
+      state = playCard(state, legalActions[0]);
+      legalActions = getLegalActions(state);
+      guard += 1;
+    }
+    state = endTurn(state);
+    guard += 1;
+  }
+  if (guard >= 200) throw new Error(`Simulation stalled for seed ${seed}`);
+  return state;
+}

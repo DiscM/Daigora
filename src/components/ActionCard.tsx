@@ -7,7 +7,6 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
   const card = cardById[instance.defId];
   const legal = canPlayCard(game, instance.instanceId);
   const cost = getCardCost(game, card);
-  const costKind = cost.pp > 0 ? 'pp' : 'ap';
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handlePlay = () => {
@@ -26,7 +25,10 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
       title={legal.reason ?? ''}
     >
       <span className="card-head">
-        <span className={`card-cost ${costKind}`}>{cost.ap || cost.pp}</span>
+        <span className="card-costs">
+          {cost.ap > 0 || cost.pp === 0 ? <span className="card-cost ap">{cost.ap}</span> : null}
+          {cost.pp > 0 ? <span className="card-cost pp">{cost.pp}</span> : null}
+        </span>
         <strong>{card.name}</strong>
       </span>
       <span className={`card-art ${card.type.toLowerCase().replaceAll(' ', '-')}`} aria-hidden="true" />

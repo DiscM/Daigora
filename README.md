@@ -51,13 +51,13 @@ Your deck consists of Action Cards and Status Cards:
   * **Pollution:** When drawn, immediately drains $-1$ AP for the turn.
   * **Apathy:** Contains the **Retain** keyword. It stays in your hand, taking up space and blocking redraws until cleansed.
   * **Misinformation:** When drawn, increases the cost of all Education and Policy cards by $+1$ AP/PP.
-  * **Delay:** Next Technology or Policy card loses momentum.
+  * **Delay:** When drawn, Technology and Policy cards cost $+1$ for the turn, then Delay exhausts itself.
   * **Backlash:** When drawn, costs you $-1$ Trust, then exhausts itself.
 
 #### Card Keywords
 * **Draw X:** Instantly pull $X$ cards from your deck.
 * **Exhaust:** The card is removed from the cycling deck for the remainder of the game.
-* **Ongoing:** Applies a permanent, active effect (e.g., ongoing shield against specific crisis types).
+* **Ongoing:** Applies a permanent, active effect, such as preventing damage from matching crisis types.
 * **Retain:** Kept in hand at the end of the turn rather than discarded.
 * **Cleanse:** Removes target Status cards from your hand, deck, or discard pile, moving them to the exhaust pile.
 
@@ -91,7 +91,7 @@ Choose up to **3 Advisors** during setup to customize your strategy. Each has a 
   * *Drawback:* If Coordination drops below 3, immediately lose 1 Trust.
 * **The Disaster Responder (Emergency Planner):**
   * *Passive:* First crisis damage taken each turn is reduced by 1.
-  * *Drawback:* Long-term solution cards do not gain bonus effects.
+  * *Drawback:* Ongoing shield effects from long-term projects are not added.
 
 ---
 

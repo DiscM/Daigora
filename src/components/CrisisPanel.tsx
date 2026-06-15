@@ -64,7 +64,8 @@ function renderStatusTooltips(text: string) {
 
 function isCrisisSentenceMet(game: GameState, sentence: string): boolean {
   const lowerSentence = sentence.toLowerCase();
+  const crisis = game.currentCrisisId ? crisisById[game.currentCrisisId] : undefined;
   if (game.crisisAvertedThisTurn && /\b(deal|damage|health)\b/.test(lowerSentence)) return true;
-  if (game.currentCrisisId === 'deforestation-surge' && lowerSentence.includes('if untreated') && !game.untreatedDeforestation) return true;
+  if (crisis?.untreatedDamage && lowerSentence.includes('if untreated') && !game.untreatedDeforestation) return true;
   return false;
 }

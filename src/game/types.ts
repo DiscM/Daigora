@@ -31,11 +31,20 @@ export interface CrisisDefinition {
   id: string;
   name: string;
   text: string;
+  tags?: string[];
+  addStatuses?: StatusKind[];
+  drawPenaltyNextTurn?: number;
+  costPenalties?: Array<{ cardType: CardType; amount: number; timing: 'thisTurn' | 'nextTurn' | 'both' }>;
+  requiresEnvironmentalResponse?: boolean;
+  pollutionEscalatesIfNoEnvironmental?: boolean;
+  untreatedDamage?: number;
+  avertWhenStatusCleansed?: StatusKind;
   effects: Effect[];
   calamity?: {
     index: IndexKey;
     threshold: number;
     text: string;
+    addStatuses?: StatusKind[];
     effects: Effect[];
   };
 }
@@ -78,6 +87,7 @@ export interface GameState {
   crisisDeck: string[];
   crisisDiscard: string[];
   currentCrisisId?: string;
+  nextInstanceId: number;
   deck: CardInstance[];
   hand: CardInstance[];
   discard: CardInstance[];
@@ -92,6 +102,7 @@ export interface GameState {
   policyLockedNextTurn: boolean;
   policyLockedThisTurn: boolean;
   noEnvironmentalPlayedThisTurn: boolean;
+  educationPlayedThisTurn: boolean;
   educationBonusUsedThisTurn: boolean;
   ecologyBonusUsedThisTurn: boolean;
   untreatedDeforestation: boolean;

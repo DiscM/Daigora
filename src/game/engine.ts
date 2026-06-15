@@ -45,13 +45,39 @@ function addLog(state: GameState, text: string): GameLogEntry[] {
   return [{ turn: state.turn, text }, ...state.log].slice(0, 12);
 }
 
-function mutateIndex(state: GameState, index: IndexKey, amount: number): void {
+function nextInstanceId(state: GameState, prefix: string): string {
+  const id = `${prefix}-${state.nextInstanceId}`;
+  state.nextInstanceId += 1;
+  return id;
+}
+
+function mutateIndex(state: GameState, index: IndexKey, amount: number, skipAdvisorDrawbacks = false): void {
+  const previousValue = state.indexes[index];
   let adjustedAmount = amount;
+  if (
+    index === 'trust' &&
+    amount > 0 &&
+    state.selectedAidIds.includes('engineer') &&
+    !state.educationPlayedThisTurn
+  ) {
+    adjustedAmount = Math.max(0, amount - 1);
+    if (amount !== adjustedAmount) state.log = addLog(state, 'Engineer drawback reduced a Trust gain.');
+  }
   if (index === 'ecology' && amount > 0 && state.selectedAidIds.includes('ecologist') && !state.ecologyBonusUsedThisTurn) {
     adjustedAmount += 1;
     state.ecologyBonusUsedThisTurn = true;
   }
   state.indexes[index] = clamp(state.indexes[index] + adjustedAmount, 0, 10);
+  if (
+    !skipAdvisorDrawbacks &&
+    index === 'coordination' &&
+    state.selectedAidIds.includes('policy-advocate') &&
+    previousValue >= 3 &&
+    state.indexes.coordination < 3
+  ) {
+    mutateIndex(state, 'trust', -1, true);
+    state.log = addLog(state, 'Policy Advocate drawback triggered: -1 Trust.');
+  }
 }
 
 function applyHealth(state: GameState, amount: number): void {
@@ -82,7 +108,7 @@ function addStatusToDiscard(state: GameState, status: StatusKind): void {
     Backlash: 'status-backlash',
   };
   const count = state.deck.length + state.hand.length + state.discard.length + state.exhausted.length;
-  state.discard.push({ defId: map[status], instanceId: `status-${count}-${Date.now()}-${status}` });
+  state.discard.push({ defId: map[status], instanceId: nextInstanceId(state, `status-${count}-${status}`) });
 }
 
 function cleanse(state: GameState, amount: number, status?: StatusKind): number {
@@ -127,6 +153,11 @@ function drawCards(state: GameState, count: number): void {
       state.thisTurnCostPenalty.Policy = (state.thisTurnCostPenalty.Policy ?? 0) + 1;
       state.hand.push(drawn);
       state.log = addLog(state, 'Misinformation raised Education and Policy costs.');
+    } else if (def.id === 'status-delay') {
+      state.thisTurnCostPenalty.Technology = (state.thisTurnCostPenalty.Technology ?? 0) + 1;
+      state.thisTurnCostPenalty.Policy = (state.thisTurnCostPenalty.Policy ?? 0) + 1;
+      state.exhausted.push(drawn);
+      state.log = addLog(state, 'Delay slowed Technology and Policy this turn.');
     } else {
       state.hand.push(drawn);
     }
@@ -159,6 +190,10 @@ function applyEffect(state: GameState, effect: Effect): void {
       state.incomingDamagePrevention += effect.amount;
       break;
     case 'ongoingShield':
+      if (state.selectedAidIds.includes('disaster-responder')) {
+        state.log = addLog(state, 'Disaster Responder drawback blocked an ongoing shield.');
+        break;
+      }
       state.ongoing.push({ source: 'card', tag: effect.tag, amount: effect.amount });
       break;
     case 'peekCrisis':
@@ -172,7 +207,14 @@ function applyEffect(state: GameState, effect: Effect): void {
 
 function applyCrisisEffect(state: GameState, effect: Effect): void {
   if (effect.kind === 'health' && effect.amount < 0) {
-    state.pendingCrisisDamage += Math.abs(effect.amount);
+    const damage = Math.abs(effect.amount);
+    const tags = state.currentCrisisId ? crisisById[state.currentCrisisId].tags ?? [] : [];
+    const ongoingPrevention = state.ongoing
+      .filter((ongoing) => tags.includes(ongoing.tag))
+      .reduce((sum, ongoing) => sum + ongoing.amount, 0);
+    const prevented = Math.min(damage, ongoingPrevention);
+    state.pendingCrisisDamage += damage - prevented;
+    if (prevented > 0) state.log = addLog(state, `Ongoing projects prevented ${prevented} crisis damage.`);
     return;
   }
   applyEffect(state, effect);
@@ -224,6 +266,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     selectedAidIds,
     crisisDeck,
     crisisDiscard: [],
+    nextInstanceId: deck.length + 1,
     deck,
     hand: [],
     discard: [],
@@ -238,6 +281,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     policyLockedNextTurn: false,
     policyLockedThisTurn: false,
     noEnvironmentalPlayedThisTurn: true,
+    educationPlayedThisTurn: false,
     educationBonusUsedThisTurn: false,
     ecologyBonusUsedThisTurn: false,
     untreatedDeforestation: false,
@@ -262,6 +306,7 @@ export function startTurn(input: GameState): GameState {
   state.policyLockedThisTurn = state.policyLockedNextTurn;
   state.policyLockedNextTurn = false;
   state.noEnvironmentalPlayedThisTurn = true;
+  state.educationPlayedThisTurn = false;
   state.educationBonusUsedThisTurn = false;
   state.ecologyBonusUsedThisTurn = false;
   state.untreatedDeforestation = false;
@@ -288,35 +333,22 @@ export function startTurn(input: GameState): GameState {
 function resolveCrisis(state: GameState, crisisId: string): void {
   const crisis = crisisById[crisisId];
   state.log = addLog(state, `Crisis revealed: ${crisis.name}.`);
-  if (crisis.id === 'industrial-pollution-corridor') {
-    addStatusToDiscard(state, 'Pollution');
-    addStatusToDiscard(state, 'Pollution');
-    addStatusToDiscard(state, 'Pollution');
-  }
-  if (crisis.id === 'plastic-waste-surge') {
-    addStatusToDiscard(state, 'Pollution');
-    addStatusToDiscard(state, 'Pollution');
-  }
-  if (crisis.id === 'misleading-campaign') {
-    addStatusToDiscard(state, 'Misinformation');
-    addStatusToDiscard(state, 'Backlash');
-  }
-  if (crisis.id === 'public-burnout') state.nextTurnDrawPenalty += 1;
-  if (crisis.id === 'supply-chain-shock') {
-    state.thisTurnCostPenalty.Technology = (state.thisTurnCostPenalty.Technology ?? 0) + 1;
-    state.nextTurnCostPenalty.Technology = (state.nextTurnCostPenalty.Technology ?? 0) + 1;
-  }
-  if (crisis.id === 'diplomatic-gridlock') {
-    state.thisTurnCostPenalty.Policy = (state.thisTurnCostPenalty.Policy ?? 0) + 1;
-    state.nextTurnCostPenalty.Policy = (state.nextTurnCostPenalty.Policy ?? 0) + 1;
-  }
-  if (crisis.id === 'deforestation-surge') state.untreatedDeforestation = true;
+  crisis.addStatuses?.forEach((status) => addStatusToDiscard(state, status));
+  state.nextTurnDrawPenalty += crisis.drawPenaltyNextTurn ?? 0;
+  crisis.costPenalties?.forEach((penalty) => {
+    if (penalty.timing === 'thisTurn' || penalty.timing === 'both') {
+      state.thisTurnCostPenalty[penalty.cardType] = (state.thisTurnCostPenalty[penalty.cardType] ?? 0) + penalty.amount;
+    }
+    if (penalty.timing === 'nextTurn' || penalty.timing === 'both') {
+      state.nextTurnCostPenalty[penalty.cardType] = (state.nextTurnCostPenalty[penalty.cardType] ?? 0) + penalty.amount;
+    }
+  });
+  if (crisis.untreatedDamage) state.untreatedDeforestation = true;
 
   crisis.effects.forEach((effect) => applyCrisisEffect(state, effect));
   if (crisis.calamity && state.indexes[crisis.calamity.index] <= crisis.calamity.threshold) {
     crisis.calamity.effects.forEach((effect) => applyCrisisEffect(state, effect));
-    if (crisis.id === 'aging-water-infrastructure') addStatusToDiscard(state, 'Apathy');
-    if (crisis.id === 'industrial-pollution-corridor') addStatusToDiscard(state, 'Pollution');
+    crisis.calamity.addStatuses?.forEach((status) => addStatusToDiscard(state, status));
     state.log = addLog(state, crisis.calamity.text);
   }
   resolveCascadingIfNeeded(state, true);
@@ -333,10 +365,10 @@ function updateCrisisAverted(state: GameState): void {
     state.crisisAvertedThisTurn = true;
     return;
   }
-  if (state.currentCrisisId === 'deforestation-surge' && !state.untreatedDeforestation) state.crisisAvertedThisTurn = true;
-  if (state.currentCrisisId === 'plastic-waste-surge' && !state.noEnvironmentalPlayedThisTurn) state.crisisAvertedThisTurn = true;
-  if (state.currentCrisisId === 'industrial-pollution-corridor' && !hasStatusInActivePiles(state, 'Pollution')) state.crisisAvertedThisTurn = true;
-  if (state.currentCrisisId === 'misleading-campaign' && !hasStatusInActivePiles(state, 'Misinformation')) state.crisisAvertedThisTurn = true;
+  if (crisis.requiresEnvironmentalResponse && !state.noEnvironmentalPlayedThisTurn) state.crisisAvertedThisTurn = true;
+  if (crisis.avertWhenStatusCleansed && !hasStatusInActivePiles(state, crisis.avertWhenStatusCleansed)) {
+    state.crisisAvertedThisTurn = true;
+  }
 }
 
 export function getCardCost(state: GameState, card: CardDefinition): { ap: number; pp: number } {
@@ -376,6 +408,7 @@ export function playCard(input: GameState, instanceId: string): GameState {
   const cost = getCardCost(state, card);
   state.actionPoints -= cost.ap;
   state.policyPoints -= cost.pp;
+  if (card.type === 'Education') state.educationPlayedThisTurn = true;
 
   card.effects.forEach((effect) => applyEffect(state, effect));
   if (card.effects.some((effect) => effect.kind === 'preventDamage')) {
@@ -416,13 +449,15 @@ export function endTurn(input: GameState): GameState {
       state.pendingCrisisDamage = 0;
     }
   }
-  if (state.currentCrisisId === 'plastic-waste-surge' && state.noEnvironmentalPlayedThisTurn) {
+  const currentCrisis = state.currentCrisisId ? crisisById[state.currentCrisisId] : undefined;
+  if (currentCrisis?.pollutionEscalatesIfNoEnvironmental && state.noEnvironmentalPlayedThisTurn) {
     addStatusToDiscard(state, 'Pollution');
     state.log = addLog(state, 'Plastic Waste Surge added another Pollution.');
   }
   if (state.untreatedDeforestation && !state.crisisAvertedThisTurn) {
-    applyHealth(state, -2);
-    state.log = addLog(state, 'Untreated deforestation caused 2 more damage.');
+    const untreatedDamage = currentCrisis?.untreatedDamage ?? 0;
+    applyHealth(state, -untreatedDamage);
+    state.log = addLog(state, `Untreated deforestation caused ${untreatedDamage} more damage.`);
   } else if (state.untreatedDeforestation) {
     state.log = addLog(state, 'Averted untreated deforestation damage.');
   }

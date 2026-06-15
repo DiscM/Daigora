@@ -193,7 +193,7 @@ button:disabled {
 }
 
 .advisor-picker .aid-chip {
-  min-height: 124px;
+  min-height: 168px;
   align-items: flex-start;
   justify-content: flex-start;
   flex-direction: column;
@@ -226,7 +226,8 @@ button:disabled {
   color: #1f2c25;
 }
 
-.aid-chip .advisor-benefit {
+.aid-chip .advisor-benefit,
+.aid-chip .advisor-drawback {
   width: 100%;
   margin-top: 2px;
   padding-top: 8px;
@@ -236,7 +237,12 @@ button:disabled {
   line-height: 1.3;
 }
 
-.aid-chip .advisor-benefit b {
+.aid-chip .advisor-drawback {
+  color: #f3b59d;
+}
+
+.aid-chip .advisor-benefit b,
+.aid-chip .advisor-drawback b {
   display: block;
   margin-bottom: 3px;
   color: var(--hd-yellow);
@@ -246,12 +252,14 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.aid-chip.selected .advisor-benefit {
+.aid-chip.selected .advisor-benefit,
+.aid-chip.selected .advisor-drawback {
   border-color: rgba(31, 44, 37, 0.28);
   color: #1f2c25;
 }
 
-.aid-chip.selected .advisor-benefit b {
+.aid-chip.selected .advisor-benefit b,
+.aid-chip.selected .advisor-drawback b {
   color: #3f4b26;
 }
 
@@ -456,11 +464,20 @@ button:disabled {
   z-index: 40;
   right: 0;
   top: calc(100% + 10px);
-  width: min(510px, 90vw);
-  padding: 16px;
+  width: min(330px, 86vw);
+  padding: 12px;
   border: 4px solid var(--hd-border);
   background: var(--hd-panel);
   box-shadow: var(--hd-shadow-lg);
+}
+
+.setup-popover .seed-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.setup-popover .seed-control input {
+  width: 100%;
 }
 
 .seed-control,
@@ -492,8 +509,21 @@ button:disabled {
   flex-wrap: wrap;
 }
 
-.setup-popover .aid-chip span {
+.setup-popover .menu-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.setup-popover .aid-chip > span:not(.advisor-benefit):not(.advisor-drawback) {
   display: none;
+}
+
+.setup-popover .aid-chip .advisor-benefit,
+.setup-popover .aid-chip .advisor-drawback {
+  display: block;
+  padding-top: 6px;
+  font-size: 0.52rem;
 }
 
 .aid-chip,
@@ -1064,6 +1094,7 @@ button:disabled {
 }
 
 .aid-token {
+  position: relative;
   min-width: 98px;
   padding: 8px 10px;
   border: 2px solid var(--hd-border);
@@ -1075,6 +1106,55 @@ button:disabled {
   line-height: 1.4;
   text-align: center;
   text-transform: uppercase;
+}
+
+.aid-token:focus-visible {
+  outline: 2px solid var(--hd-yellow);
+  outline-offset: 3px;
+}
+
+.aid-tooltip {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: min(280px, 80vw);
+  padding: 10px 12px;
+  border: 2px solid var(--hd-cyan);
+  color: var(--hd-text);
+  background: var(--hd-darker);
+  box-shadow: var(--hd-shadow-sm);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.aid-tooltip b {
+  display: block;
+  margin: 5px 0 2px;
+  color: var(--hd-yellow);
+  font-family: "Press Start 2P", "JetBrains Mono", monospace;
+  font-size: 0.46rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.aid-tooltip b:first-child {
+  margin-top: 0;
+}
+
+.aid-token:hover .aid-tooltip,
+.aid-token:focus-visible .aid-tooltip,
+.aid-token:focus-within .aid-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .result-card {
@@ -1286,9 +1366,16 @@ button:disabled {
 .card-head {
   min-width: 0;
   display: grid;
-  grid-template-columns: 27px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 7px;
+}
+
+.card-costs {
+  min-width: 27px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
 }
 
 .card-cost {
@@ -1895,8 +1982,12 @@ button:disabled {
 }
 
 .bottom-console .card-head {
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 5px;
+}
+
+.bottom-console .card-costs {
+  min-width: 24px;
 }
 
 .bottom-console .card-cost {
@@ -2150,8 +2241,12 @@ button:disabled {
   }
 
   .bottom-console .card-head {
-    grid-template-columns: 22px minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 5px;
+  }
+
+  .bottom-console .card-costs {
+    min-width: 22px;
   }
 
   .bottom-console .card-cost {

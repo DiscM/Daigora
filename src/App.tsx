@@ -32,7 +32,9 @@ function loadGame(): GameState | null {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw) as GameState;
+      const parsed = JSON.parse(raw);
+      if (!isSavedGameShape(parsed)) throw new Error('Invalid save');
+      return normalizeSavedGame(parsed);
     } catch {
       localStorage.removeItem(SAVE_KEY);
     }
@@ -76,7 +78,6 @@ export function App() {
     return () => window.clearTimeout(timeout);
   }, [game]);
 
-  const selectedAids = useMemo(() => projectAids.filter((aid) => selectedAidIds.includes(aid.id)), [selectedAidIds]);
   const gameAids = useMemo(() => projectAids.filter((aid) => game?.selectedAidIds.includes(aid.id)), [game?.selectedAidIds]);
 
   function startGameFromSetup() {
@@ -130,6 +131,7 @@ export function App() {
             <strong>{aid.name.replace('The ', '')}</strong>
             <span>{aid.role}</span>
             <span className="advisor-benefit"><b>Benefit</b>{aid.passive}</span>
+            <span className="advisor-drawback"><b>Drawback</b>{aid.drawback}</span>
           </button>
         ))}
       </div>
@@ -222,8 +224,14 @@ export function App() {
         </div>
         <div className="aid-row">
           {gameAids.map((aid) => (
-            <div className="aid-token" key={aid.id} title={`${aid.passive} Drawback: ${aid.drawback}`}>
-              {aid.name.replace('The ', '')}
+            <div className="aid-token" key={aid.id} tabIndex={0}>
+              <span>{aid.name.replace('The ', '')}</span>
+              <span className="aid-tooltip" role="tooltip">
+                <b>Benefit</b>
+                {aid.passive}
+                <b>Drawback</b>
+                {aid.drawback}
+              </span>
             </div>
           ))}
         </div>
@@ -285,7 +293,6 @@ export function App() {
                     <Play size={18} /> New Game
                   </button>
                 </div>
-                {renderAidPicker()}
               </div>
             </details>
             <button className="end-turn" onClick={() => setGame((state) => (state ? endTurn(state) : state))} disabled={game.phase !== 'play'}>
@@ -301,6 +308,43 @@ export function App() {
         ))}
       </section>
     </main>
+  );
+}
+
+function normalizeSavedGame(saved: GameState): GameState {
+  const cardCount = saved.deck.length + saved.hand.length + saved.discard.length + saved.exhausted.length;
+  return {
+    ...saved,
+    nextInstanceId: saved.nextInstanceId ?? cardCount + 1,
+    educationPlayedThisTurn: saved.educationPlayedThisTurn ?? false,
+  };
+}
+
+function isSavedGameShape(value: unknown): value is GameState {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<GameState>;
+  return (
+    typeof candidate.seed === 'string' &&
+    typeof candidate.rngState === 'number' &&
+    typeof candidate.turn === 'number' &&
+    typeof candidate.planetHealth === 'number' &&
+    typeof candidate.maxPlanetHealth === 'number' &&
+    typeof candidate.actionPoints === 'number' &&
+    typeof candidate.policyPoints === 'number' &&
+    Boolean(candidate.indexes) &&
+    typeof candidate.indexes?.trust === 'number' &&
+    typeof candidate.indexes.ecology === 'number' &&
+    typeof candidate.indexes.economy === 'number' &&
+    typeof candidate.indexes.coordination === 'number' &&
+    Array.isArray(candidate.selectedAidIds) &&
+    Array.isArray(candidate.crisisDeck) &&
+    Array.isArray(candidate.crisisDiscard) &&
+    Array.isArray(candidate.deck) &&
+    Array.isArray(candidate.hand) &&
+    Array.isArray(candidate.discard) &&
+    Array.isArray(candidate.exhausted) &&
+    Array.isArray(candidate.ongoing) &&
+    Array.isArray(candidate.log)
   );
 }
 
