@@ -2,6 +2,7 @@ import { actionCards, cardById, crises, crisisById, projectAids, starterDeckIds 
 import type { CardDefinition, CardInstance, CardType, Effect, GameLogEntry, GameState, IndexKey, StatusKind } from './types';
 
 const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
+export const GAME_TURN_LIMIT = 20;
 
 function hashSeed(seed: string): number {
   let hash = 2166136261;
@@ -45,7 +46,12 @@ function addLog(state: GameState, text: string): GameLogEntry[] {
 }
 
 function mutateIndex(state: GameState, index: IndexKey, amount: number): void {
-  state.indexes[index] = clamp(state.indexes[index] + amount, 0, 10);
+  let adjustedAmount = amount;
+  if (index === 'ecology' && amount > 0 && state.selectedAidIds.includes('ecologist') && !state.ecologyBonusUsedThisTurn) {
+    adjustedAmount += 1;
+    state.ecologyBonusUsedThisTurn = true;
+  }
+  state.indexes[index] = clamp(state.indexes[index] + adjustedAmount, 0, 10);
 }
 
 function applyHealth(state: GameState, amount: number): void {
@@ -200,7 +206,10 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
   let rngState = hashSeed(seed);
   const [deck, deckState] = shuffleWithState(makeInstances(starterDeckIds, 'starter'), rngState);
   rngState = deckState;
-  const [crisisDeck, crisisState] = shuffleWithState(crises.map((crisis) => crisis.id), rngState);
+  const crisisIds = Array.from({ length: Math.ceil(GAME_TURN_LIMIT / crises.length) }, () => crises.map((crisis) => crisis.id))
+    .flat()
+    .slice(0, GAME_TURN_LIMIT);
+  const [crisisDeck, crisisState] = shuffleWithState(crisisIds, rngState);
   rngState = crisisState;
   const state: GameState = {
     seed,
@@ -230,6 +239,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     policyLockedThisTurn: false,
     noEnvironmentalPlayedThisTurn: true,
     educationBonusUsedThisTurn: false,
+    ecologyBonusUsedThisTurn: false,
     untreatedDeforestation: false,
     log: [],
   };
@@ -240,7 +250,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
 export function startTurn(input: GameState): GameState {
   const state = structuredClone(input) as GameState;
   if (state.phase === 'gameOver') return state;
-  if (state.turn >= 10) return resolveFinalCrisis(state);
+  if (state.turn >= GAME_TURN_LIMIT) return resolveFinalCrisis(state);
   state.phase = 'play';
   state.turn += 1;
   state.actionPoints = state.turn >= 6 ? 4 : 3;
@@ -253,6 +263,7 @@ export function startTurn(input: GameState): GameState {
   state.policyLockedNextTurn = false;
   state.noEnvironmentalPlayedThisTurn = true;
   state.educationBonusUsedThisTurn = false;
+  state.ecologyBonusUsedThisTurn = false;
   state.untreatedDeforestation = false;
   state.hand = state.hand.filter(isRetained);
 

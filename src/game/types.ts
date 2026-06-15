@@ -93,6 +93,7 @@ export interface GameState {
   policyLockedThisTurn: boolean;
   noEnvironmentalPlayedThisTurn: boolean;
   educationBonusUsedThisTurn: boolean;
+  ecologyBonusUsedThisTurn: boolean;
   untreatedDeforestation: boolean;
   finalRating?: string;
   finalSummary?: string;

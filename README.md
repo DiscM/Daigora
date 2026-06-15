@@ -1,13 +1,13 @@
 # 🌍 Heal the Planet
 
-An interactive, strategic planetary management card game built using **React**, **TypeScript**, and **Vite**. As the lead administrator of the Earth Council, your mission is to guide the planet through **10 critical turns** of escalating environmental, economic, and social crises. Build trust, repair ecosystems, maintain economic flow, and coordinate international policy to prevent a final, cascading global collapse.
+An interactive, strategic planetary management card game built using **React**, **TypeScript**, and **Vite**. As the lead administrator of the Earth Council, your mission is to guide the planet through **20 critical turns** of escalating environmental, economic, and social crises. Build trust, repair ecosystems, maintain economic flow, and coordinate international policy to prevent a final, cascading global collapse.
 
 
 ## ⚙️ Core Game Mechanics
 
 ### 1. The Game Loop
-* **Length:** Exactly **10 turns**.
-* **Goal:** Keep the **Planet Health** (starts at 24/24) above `0` through all 10 turns and survive the devastating Final Cascading Crisis.
+* **Length:** Exactly **20 turns**.
+* **Goal:** Keep the **Planet Health** (starts at 24/24) above `0` through all 20 turns and survive the devastating Final Cascading Crisis.
 * **Flow of a Turn:**
   1. **Crisis Phase:** A new Crisis Card is drawn and resolved. Baseline crisis effects and conditional **Calamities** are applied immediately.
   2. **Draw Phase:** You draw 5 cards (minus any draw penalties from the previous turn).
@@ -34,7 +34,7 @@ Your governing capacity is tracked across four core indexes. Each starts at **4*
 ---
 
 ### 3. Energy & Resources
-* **Action Points (AP):** Your primary currency for playing standard cards. You begin with **3 AP** (Turns 1-5) and scale up to **4 AP** (Turns 6-10).
+* **Action Points (AP):** Your primary currency for playing standard cards. You begin with **3 AP** (Turns 1-5) and scale up to **4 AP** (Turns 6-20).
 * **Policy Points (PP):** Earned by playing specific Education or Policy cards. PP is used to fund powerful, structural global policy decisions.
 
 ---
@@ -96,7 +96,7 @@ Choose up to **3 Advisors** during setup to customize your strategy. Each has a 
 ---
 
 ### 7. The Final Crisis & Victory Ratings
-At the end of Turn 10, the **Cascading Planetary Crisis** delivers one final blow to your planet. 
+At the end of Turn 20, the **Cascading Planetary Crisis** delivers one final blow to your planet. 
 
 * **Base Damage:** **16 damage** is dealt to Planet Health.
 * **Mitigation (High Readiness):**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from './content';
-import { canPlayCard, createGame, endTurn, getCardCost, playCard, resolveFinalCrisis, startTurn } from './engine';
+import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, playCard, resolveFinalCrisis, startTurn } from './engine';
 import type { GameState } from './types';
 
 function findCard(state: GameState, defId: string) {
@@ -16,6 +16,14 @@ describe('Heal the Planet engine', () => {
 
     expect(a.hand.map((card) => card.defId)).toEqual(b.hand.map((card) => card.defId));
     expect(a.currentCrisisId).toBe(b.currentCrisisId);
+  });
+
+  it('creates enough crisis cards for a twenty-turn game', () => {
+    const state = createGame('twenty-turn-crisis-test', ['educator']);
+
+    expect(state.turn).toBe(1);
+    expect(state.currentCrisisId).toBeDefined();
+    expect(state.crisisDeck).toHaveLength(GAME_TURN_LIMIT - 1);
   });
 
   it('enforces AP costs and rejects unplayable status cards', () => {
@@ -87,12 +95,72 @@ describe('Heal the Planet engine', () => {
     state.hand = [{ defId: 'clean-infrastructure-act', instanceId: 'policy' }];
     state.actionPoints = 0;
     state.policyPoints = 2;
+    state.thisTurnCostPenalty = {};
 
     const cost = getCardCost(state, cardById['clean-infrastructure-act']);
     const next = playCard(state, 'policy');
 
     expect(cost).toEqual({ ap: 0, pp: 2 });
     expect(next.indexes.coordination).toBeGreaterThan(state.indexes.coordination);
+  });
+
+  it('applies the Educator bonus to the first Education card each turn', () => {
+    const state = createGame('educator-benefit-test', ['educator']);
+    state.hand = [
+      { defId: 'local-policy-petition', instanceId: 'petition' },
+      { defId: 'research-briefing', instanceId: 'briefing' },
+    ];
+    state.deck = [];
+    state.actionPoints = 3;
+    state.indexes.trust = 4;
+
+    const afterFirst = playCard(state, 'petition');
+    const afterSecond = playCard(afterFirst, 'briefing');
+
+    expect(afterFirst.indexes.trust).toBe(6);
+    expect(afterFirst.educationBonusUsedThisTurn).toBe(true);
+    expect(afterSecond.indexes.trust).toBe(6);
+  });
+
+  it('applies the Ecologist bonus to the first Ecology restoration each turn', () => {
+    const state = createGame('ecologist-benefit-test', ['ecologist']);
+    state.hand = [
+      { defId: 'river-cleanup', instanceId: 'river' },
+      { defId: 'tree-canopy-program', instanceId: 'canopy' },
+    ];
+    state.deck = [];
+    state.actionPoints = 3;
+    state.indexes.ecology = 4;
+
+    const afterFirst = playCard(state, 'river');
+    const afterSecond = playCard(afterFirst, 'canopy');
+
+    expect(afterFirst.indexes.ecology).toBe(6);
+    expect(afterFirst.ecologyBonusUsedThisTurn).toBe(true);
+    expect(afterSecond.indexes.ecology).toBe(8);
+  });
+
+  it('applies the Engineer discount to Technology cards', () => {
+    const state = createGame('engineer-benefit-test', ['engineer']);
+
+    expect(getCardCost(state, cardById['renewable-grid-buildout'])).toEqual({ ap: 2, pp: 0 });
+    expect(getCardCost(state, cardById['solar-installation-project'])).toEqual({ ap: 0, pp: 0 });
+  });
+
+  it('applies the Policy Advocate bonus when Policy cards are played', () => {
+    const state = createGame('policy-advocate-benefit-test', ['policy-advocate']);
+    state.hand = [{ defId: 'regional-response-pact', instanceId: 'pact' }];
+    state.policyPoints = 1;
+
+    const next = playCard(state, 'pact');
+
+    expect(next.policyPoints).toBe(1);
+  });
+
+  it('applies the Disaster Responder prevention at the start of each turn', () => {
+    const state = createGame('disaster-responder-benefit-test', ['disaster-responder']);
+
+    expect(state.incomingDamagePrevention).toBe(1);
   });
 
   it('prevents later damage during the same turn', () => {
@@ -145,6 +213,7 @@ describe('Heal the Planet engine', () => {
     state.hand = [{ defId: 'clean-infrastructure-act', instanceId: 'policy' }];
     state.pendingCrisisDamage = 2;
     state.planetHealth = 10;
+    state.thisTurnCostPenalty = {};
     state.policyPoints = 2;
     state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 2 };
 
@@ -204,9 +273,9 @@ describe('Heal the Planet engine', () => {
     expect(afterTurn.log.some((entry) => entry.text === 'Cascading Disaster triggered: -2 Health and +1 Apathy.')).toBe(true);
   });
 
-  it('moves from turn ten into final scoring', () => {
+  it('moves from turn twenty into final scoring', () => {
     const state = createGame('final-test', ['educator']);
-    state.turn = 10;
+    state.turn = GAME_TURN_LIMIT;
     state.planetHealth = 20;
     state.indexes = { trust: 10, ecology: 10, economy: 10, coordination: 10 };
 

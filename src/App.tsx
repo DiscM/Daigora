@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Menu, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { projectAids } from './game/content';
-import { createGame, endTurn, playCard } from './game/engine';
+import { GAME_TURN_LIMIT, createGame, endTurn, playCard } from './game/engine';
 import type { GameState } from './game/types';
 import { Resource } from './components/Resource';
 import { IndexMeter } from './components/IndexMeter';
@@ -129,6 +129,7 @@ export function App() {
           >
             <strong>{aid.name.replace('The ', '')}</strong>
             <span>{aid.role}</span>
+            <span className="advisor-benefit"><b>Benefit</b>{aid.passive}</span>
           </button>
         ))}
       </div>
@@ -161,7 +162,7 @@ export function App() {
           <p className="eyebrow">Earth Council Briefing</p>
           <h1>Heal the Planet</h1>
           <p>
-            Ten crisis waves are approaching. Build trust, repair ecosystems, keep the economy moving, and coordinate policy before the final cascading crisis arrives.
+            Twenty crisis waves are approaching. Build trust, repair ecosystems, keep the economy moving, and coordinate policy before the final cascading crisis arrives.
           </p>
           <div className="briefing-grid" aria-label="How to play">
             <span>Play cards with AP.</span>
@@ -241,7 +242,7 @@ export function App() {
             <h1>Heal the Planet</h1>
           </div>
           <div className="resource-strip" aria-label="Game resources">
-            <Resource label="Turn" value={`${Math.min(game.turn, 10)}/10`} kind="turn" />
+            <Resource label="Turn" value={`${Math.min(game.turn, GAME_TURN_LIMIT)}/${GAME_TURN_LIMIT}`} kind="turn" />
             <Resource key={`health-${flashTick}-${flashes.health ?? 'stable'}`} label="Health" value={`${game.planetHealth}/${game.maxPlanetHealth}`} kind="health" tone={game.planetHealth <= 6 ? 'danger' : 'good'} flash={flashes.health} />
             <Resource key={`ap-${flashTick}-${flashes.actionPoints ?? 'stable'}`} label="AP" value={game.actionPoints} kind="ap" flash={flashes.actionPoints} />
             <Resource key={`pp-${flashTick}-${flashes.policyPoints ?? 'stable'}`} label="PP" value={game.policyPoints} kind="pp" flash={flashes.policyPoints} />
