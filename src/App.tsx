@@ -123,10 +123,9 @@ export function App() {
         {projectAids.map((aid) => (
           <button
             key={aid.id}
-            className={selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'}
+            className={`${selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'} ${aid.id === 'disaster-responder' ? 'tooltip-above' : ''}`}
             disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
             onClick={() => toggleAid(aid.id)}
-            title={`${aid.passive} Drawback: ${aid.drawback}`}
           >
             <strong>{aid.name.replace('The ', '')}</strong>
             <span>{aid.role}</span>
@@ -198,10 +197,14 @@ export function App() {
     <main className={`app-shell ${game.phase === 'gameOver' ? 'is-game-over' : ''}`}>
       <section className={`planet-stage ${flashes.health === 'loss' ? 'has-damage-flash' : ''}`} aria-label="Planet board">
         <div className="planet-damage-flash" aria-hidden="true" />
-        <div className="orbit-field" aria-hidden="true">
-          <span />
-          <span />
-          <span />
+        <div className="space-effects" aria-hidden="true">
+          <span className="starfield starfield-a" />
+          <span className="starfield starfield-b" />
+          <span className="space-haze haze-a" />
+          <span className="space-haze haze-b" />
+          <span className="comet comet-a" />
+          <span className="comet comet-b" />
+          <span className="moon-orbit"><span className="moon" /></span>
         </div>
         <div className="feedback-layer" aria-live="polite">
           {feedback.map((item) => (
@@ -213,14 +216,32 @@ export function App() {
         <div className="vector-planet" aria-hidden="true">
           <span className="planet-glow" />
           <span className="planet-ocean" />
-          <span className="continent continent-a" />
-          <span className="continent continent-b" />
-          <span className="continent continent-c" />
-          <span className="continent continent-d" />
-          <span className="damage-zone damage-a" />
-          <span className="damage-zone damage-b" />
-          <span className="cloud-band cloud-a" />
-          <span className="cloud-band cloud-b" />
+          <span className="planet-surface">
+            <span className="planet-map">
+              <span className="continent north-america" />
+              <span className="continent south-america" />
+              <span className="continent eurasia" />
+              <span className="continent africa" />
+              <span className="continent australia" />
+              <span className="continent greenland" />
+              <span className="damage-zone damage-a" />
+              <span className="damage-zone damage-b" />
+              <span className="cloud-band cloud-a" />
+              <span className="cloud-band cloud-b" />
+            </span>
+            <span className="planet-map" aria-hidden="true">
+              <span className="continent north-america" />
+              <span className="continent south-america" />
+              <span className="continent eurasia" />
+              <span className="continent africa" />
+              <span className="continent australia" />
+              <span className="continent greenland" />
+              <span className="damage-zone damage-a" />
+              <span className="damage-zone damage-b" />
+              <span className="cloud-band cloud-a" />
+              <span className="cloud-band cloud-b" />
+            </span>
+          </span>
         </div>
         <div className="aid-row">
           {gameAids.map((aid) => (
@@ -302,11 +323,6 @@ export function App() {
         </div>
       </section>
 
-      <section className="log-panel" aria-label="Game log">
-        {game.log.slice(0, 5).map((entry, index) => (
-          <span key={`${entry.turn}-${index}`}>T{entry.turn}: {entry.text}</span>
-        ))}
-      </section>
     </main>
   );
 }

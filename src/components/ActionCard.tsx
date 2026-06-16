@@ -7,6 +7,7 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
   const card = cardById[instance.defId];
   const legal = canPlayCard(game, instance.instanceId);
   const cost = getCardCost(game, card);
+  const typeClass = card.type.toLowerCase().replaceAll(' ', '-');
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handlePlay = () => {
@@ -19,7 +20,7 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
 
   return (
     <button
-      className={`action-card ${card.type.toLowerCase().replaceAll(' ', '-')} ${isPlaying ? 'is-playing' : ''}`}
+      className={`action-card ${typeClass} ${isPlaying ? 'is-playing' : ''}`}
       onClick={handlePlay}
       disabled={!legal.ok || isPlaying}
       title={legal.reason ?? ''}
@@ -31,7 +32,7 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
         </span>
         <strong>{card.name}</strong>
       </span>
-      <span className={`card-art ${card.type.toLowerCase().replaceAll(' ', '-')}`} aria-hidden="true" />
+      <span className={`card-art ${typeClass}`} aria-hidden="true" />
       <p>{card.text}</p>
     </button>
   );

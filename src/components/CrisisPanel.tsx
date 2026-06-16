@@ -1,5 +1,6 @@
 import { Factory } from 'lucide-react';
 import { crisisById } from '../game/content';
+import { isCrisisLogEntry } from '../game/log';
 import type { GameState } from '../game/types';
 
 const STATUS_TOOLTIPS: Record<string, string> = {
@@ -11,6 +12,7 @@ const STATUS_TOOLTIPS: Record<string, string> = {
 
 export function CrisisPanel({ game }: { game: GameState }) {
   const currentCrisis = game.currentCrisisId ? crisisById[game.currentCrisisId] : undefined;
+  const crisisUpdates = game.log.filter((entry) => entry.turn === game.turn && isCrisisLogEntry(entry) && shouldShowCrisisUpdate(entry.text)).slice(0, 3).reverse();
   return (
     <aside className="panel crisis-panel">
       <p className="panel-ribbon">Current Crisis</p>
@@ -37,12 +39,23 @@ export function CrisisPanel({ game }: { game: GameState }) {
               </li>
             ))}
           </ul>
+          {crisisUpdates.length > 0 ? (
+            <ul className="crisis-updates" aria-label="Crisis updates">
+              {crisisUpdates.map((entry, index) => (
+                <li key={`${entry.turn}-${index}`}>{entry.text}</li>
+              ))}
+            </ul>
+          ) : null}
         </>
       ) : (
         <p>No active crisis.</p>
       )}
     </aside>
   );
+}
+
+function shouldShowCrisisUpdate(text: string): boolean {
+  return !text.startsWith('Crisis revealed:') && !text.includes('Cascading Disaster');
 }
 
 function splitSentences(text: string): string[] {
