@@ -1,7 +1,7 @@
-import { actionCards, cardById, crises, crisisById, projectAids, starterDeckIds } from './content';
-import type { CardDefinition, CardInstance, CardType, Effect, GameLogEntry, GameState, IndexKey, StatusKind } from './types';
+import { cardById, crises, crisisById, starterDeckIds } from './content';
+import { INDEX_KEYS } from './types';
+import type { CardDefinition, CardInstance, Effect, GameLogEntry, GameState, IndexKey, StatusKind } from './types';
 
-const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
 export const GAME_TURN_LIMIT = 20;
 
 function hashSeed(seed: string): number {
@@ -35,6 +35,10 @@ function shuffleWithState<T>(items: T[], rngState: number): [T[], number] {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function cloneState(input: GameState): GameState {
+  return structuredClone(input) as GameState;
 }
 
 function makeInstances(ids: string[], prefix: string): CardInstance[] {
@@ -292,7 +296,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
 }
 
 export function startTurn(input: GameState): GameState {
-  const state = structuredClone(input) as GameState;
+  const state = cloneState(input);
   if (state.phase === 'gameOver') return state;
   if (state.turn >= GAME_TURN_LIMIT) return resolveFinalCrisis(state);
   state.phase = 'play';
@@ -396,7 +400,7 @@ export function canPlayCard(state: GameState, instanceId: string): { ok: boolean
 }
 
 export function playCard(input: GameState, instanceId: string): GameState {
-  const state = structuredClone(input) as GameState;
+  const state = cloneState(input);
   const legal = canPlayCard(state, instanceId);
   if (!legal.ok) {
     state.log = addLog(state, legal.reason ?? 'Illegal play.');
@@ -437,7 +441,7 @@ export function playCard(input: GameState, instanceId: string): GameState {
 }
 
 export function endTurn(input: GameState): GameState {
-  const state = structuredClone(input) as GameState;
+  const state = cloneState(input);
   if (state.phase !== 'play') return state;
   if (state.pendingCrisisDamage > 0) {
     if (state.crisisAvertedThisTurn) {
@@ -490,7 +494,7 @@ export function endTurn(input: GameState): GameState {
 }
 
 export function resolveFinalCrisis(input: GameState): GameState {
-  const state = structuredClone(input) as GameState;
+  const state = cloneState(input);
   state.phase = 'final';
   let damage = 16;
   if (state.indexes.trust >= 5) damage -= 3;
@@ -518,12 +522,4 @@ export function resolveFinalCrisis(input: GameState): GameState {
 
 export function getLegalActions(state: GameState): string[] {
   return state.hand.filter((card) => canPlayCard(state, card.instanceId).ok).map((card) => card.instanceId);
-}
-
-export function getAvailableAidIds(): string[] {
-  return projectAids.map((aid) => aid.id);
-}
-
-export function getMarketCards(): CardDefinition[] {
-  return actionCards;
 }

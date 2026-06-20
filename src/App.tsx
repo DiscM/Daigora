@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Menu, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { projectAids } from './game/content';
 import { GAME_TURN_LIMIT, createGame, endTurn, playCard } from './game/engine';
-import type { GameState } from './game/types';
+import type { GameState, IndexKey } from './game/types';
+import { INDEX_KEYS } from './game/types';
 import { Resource } from './components/Resource';
 import { IndexMeter } from './components/IndexMeter';
 import { ActionCard } from './components/ActionCard';
 import { ActiveProjects } from './components/ActiveProjects';
 import { CrisisPanel } from './components/CrisisPanel';
-import type { IndexKey } from './game/types';
 
 const SAVE_KEY = 'heal-the-planet-save-v1';
-const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
 const DEFAULT_AIDS = ['educator', 'disaster-responder'];
 type FeedbackKind = 'card' | 'damage' | 'debuff' | 'avert' | 'gain';
 
@@ -109,33 +108,13 @@ export function App() {
     setSeed(next);
   }
 
-  function toggleAid(id: string) {
+  const toggleAid = useCallback((id: string) => {
     setSelectedAidIds((ids) => {
       if (ids.includes(id)) return ids.filter((item) => item !== id);
       if (ids.length >= 3) return ids;
       return [...ids, id];
     });
-  }
-
-  function renderAidPicker(className = 'aid-picker') {
-    return (
-      <div className={className}>
-        {projectAids.map((aid) => (
-          <button
-            key={aid.id}
-            className={`${selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'} ${aid.id === 'disaster-responder' ? 'tooltip-above' : ''}`}
-            disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
-            onClick={() => toggleAid(aid.id)}
-          >
-            <strong>{aid.name.replace('The ', '')}</strong>
-            <span>{aid.role}</span>
-            <span className="advisor-benefit"><b>Benefit</b>{aid.passive}</span>
-            <span className="advisor-drawback"><b>Drawback</b>{aid.drawback}</span>
-          </button>
-        ))}
-      </div>
-    );
-  }
+  }, []);
 
   if (!game) {
     return (
@@ -175,7 +154,7 @@ export function App() {
             <h2>Choose up to 3 advisors</h2>
             <strong>{selectedAidIds.length}/3</strong>
           </div>
-          {renderAidPicker('advisor-picker')}
+          <AidPicker selectedAidIds={selectedAidIds} toggleAid={toggleAid} className="advisor-picker" />
           <div className="start-controls">
             <label className="seed-control">
               <span>Seed</span>
@@ -197,14 +176,14 @@ export function App() {
     <main className={`app-shell ${game.phase === 'gameOver' ? 'is-game-over' : ''}`}>
       <section className={`planet-stage ${flashes.health === 'loss' ? 'has-damage-flash' : ''}`} aria-label="Planet board">
         <div className="planet-damage-flash" aria-hidden="true" />
-        <div className="space-effects" aria-hidden="true">
-          <span className="starfield starfield-a" />
-          <span className="starfield starfield-b" />
-          <span className="space-haze haze-a" />
-          <span className="space-haze haze-b" />
-          <span className="comet comet-a" />
-          <span className="comet comet-b" />
-          <span className="moon-orbit"><span className="moon" /></span>
+        <div className="sky-effects" aria-hidden="true">
+          <span className="leaf-drift leaf-drift-a" />
+          <span className="leaf-drift leaf-drift-b" />
+          <span className="sky-glow glow-a" />
+          <span className="sky-glow glow-b" />
+          <span className="wind-gust gust-a" />
+          <span className="wind-gust gust-b" />
+          <span className="sun-orbit"><span className="sun" /></span>
         </div>
         <div className="feedback-layer" aria-live="polite">
           {feedback.map((item) => (
@@ -218,6 +197,18 @@ export function App() {
           <span className="planet-ocean" />
           <span className="planet-surface">
             <span className="planet-map">
+              <span className="continent north-america" />
+              <span className="continent south-america" />
+              <span className="continent eurasia" />
+              <span className="continent africa" />
+              <span className="continent australia" />
+              <span className="continent greenland" />
+              <span className="damage-zone damage-a" />
+              <span className="damage-zone damage-b" />
+              <span className="cloud-band cloud-a" />
+              <span className="cloud-band cloud-b" />
+            </span>
+            <span className="planet-map" aria-hidden="true">
               <span className="continent north-america" />
               <span className="continent south-america" />
               <span className="continent eurasia" />
@@ -324,6 +315,26 @@ export function App() {
       </section>
 
     </main>
+  );
+}
+
+function AidPicker({ selectedAidIds, toggleAid, className }: { selectedAidIds: string[]; toggleAid: (id: string) => void; className?: string }) {
+  return (
+    <div className={className ?? 'aid-picker'}>
+      {projectAids.map((aid) => (
+        <button
+          key={aid.id}
+          className={`${selectedAidIds.includes(aid.id) ? 'aid-chip selected' : 'aid-chip'} ${aid.id === 'disaster-responder' ? 'tooltip-above' : ''}`}
+          disabled={!selectedAidIds.includes(aid.id) && selectedAidIds.length >= 3}
+          onClick={() => toggleAid(aid.id)}
+        >
+          <strong>{aid.name.replace('The ', '')}</strong>
+          <span>{aid.role}</span>
+          <span className="advisor-benefit"><b>Benefit</b>{aid.passive}</span>
+          <span className="advisor-drawback"><b>Drawback</b>{aid.drawback}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

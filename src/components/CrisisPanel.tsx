@@ -1,10 +1,10 @@
 import { Factory } from 'lucide-react';
 import { crisisById } from '../game/content';
 import { isCrisisLogEntry } from '../game/log';
-import type { GameState } from '../game/types';
+import type { CrisisDefinition, GameState } from '../game/types';
 
 const STATUS_TOOLTIPS: Record<string, string> = {
-  Pollution: 'When drawn, lose 1 AP unless it is cleansed. It stays in hand as dead weight.',
+  Pollution: 'When drawn, lose 1 AP unless it is cleansed. Discarded at end of turn.',
   Misinformation: 'When drawn, Education and Policy cards cost more this turn.',
   Apathy: 'Retain. Cannot be played and stays in hand until a cleanse effect removes it.',
   Backlash: 'When drawn, lose 1 Trust, then exhaust it from the deck.',
@@ -32,8 +32,8 @@ export function CrisisPanel({ game }: { game: GameState }) {
           </div>
           <h2>{currentCrisis.name}</h2>
           <ul className="crisis-effects">
-            {splitSentences(currentCrisis.text).map((sentence) => (
-              <li className={isCrisisSentenceMet(game, sentence) ? 'condition-met' : ''} key={sentence}>
+            {splitSentences(currentCrisis.text).map((sentence, index) => (
+              <li className={isCrisisSentenceMet(game, currentCrisis, sentence) ? 'condition-met' : ''} key={`${index}-${sentence}`}>
                 <span className="effect-icon"><Factory size={16} /></span>
                 <span className="effect-copy">{renderStatusTooltips(sentence)}</span>
               </li>
@@ -75,9 +75,8 @@ function renderStatusTooltips(text: string) {
   });
 }
 
-function isCrisisSentenceMet(game: GameState, sentence: string): boolean {
+function isCrisisSentenceMet(game: GameState, crisis: CrisisDefinition | undefined, sentence: string): boolean {
   const lowerSentence = sentence.toLowerCase();
-  const crisis = game.currentCrisisId ? crisisById[game.currentCrisisId] : undefined;
   if (game.crisisAvertedThisTurn && /\b(deal|damage|health)\b/.test(lowerSentence)) return true;
   if (crisis?.untreatedDamage && lowerSentence.includes('if untreated') && !game.untreatedDeforestation) return true;
   return false;

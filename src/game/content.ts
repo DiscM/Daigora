@@ -26,7 +26,7 @@ export const actionCards: CardDefinition[] = [
   { id: 'mutual-aid-response', name: 'Mutual Aid Response', type: 'Emergency', costAp: 1, text: 'Restore 2 Health. +1 Coordination. Cleanse Apathy.', keywords: ['Cleanse'], effects: [{ kind: 'health', amount: 2 }, { kind: 'index', index: 'coordination', amount: 1 }, { kind: 'cleanse', status: 'Apathy', amount: 1 }] },
 ];
 
-export const statusCards: CardDefinition[] = [
+const statusCards: CardDefinition[] = [
   { id: 'status-pollution', name: 'Pollution', type: 'Status', text: 'When drawn, lose 1 AP unless cleansed.', unplayable: true, effects: [] },
   { id: 'status-apathy', name: 'Apathy', type: 'Status', text: 'Retain. Cannot be played. Stays in hand until cleansed.', keywords: ['Retain'], unplayable: true, effects: [] },
   { id: 'status-misinformation', name: 'Misinformation', type: 'Status', text: 'Next Education or Policy costs +1 AP.', unplayable: true, effects: [] },
@@ -34,7 +34,7 @@ export const statusCards: CardDefinition[] = [
   { id: 'status-backlash', name: 'Backlash', type: 'Status', text: 'When drawn, lose 1 Trust, then exhaust.', unplayable: true, effects: [] },
 ];
 
-export const allCards = [...actionCards, ...statusCards];
+const allCards = [...actionCards, ...statusCards];
 
 export const cardById = Object.fromEntries(allCards.map((card) => [card.id, card]));
 

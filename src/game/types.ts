@@ -1,5 +1,6 @@
 export type IndexKey = 'trust' | 'ecology' | 'economy' | 'coordination';
 export type Phase = 'setup' | 'play' | 'final' | 'gameOver';
+export const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
 export type CardType = 'Education' | 'Environmental Work' | 'Technology' | 'Policy' | 'Emergency' | 'Status';
 export type StatusKind = 'Pollution' | 'Apathy' | 'Misinformation' | 'Delay' | 'Backlash';
 

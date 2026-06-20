@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { Leaf, Landmark, Recycle, Users } from 'lucide-react';
+import { useDeltaBadge } from './useDeltaBadge';
 import type { IndexKey } from '../game/types';
 
 const indexLabels: Record<IndexKey, string> = {
@@ -10,32 +10,7 @@ const indexLabels: Record<IndexKey, string> = {
 };
 
 export function IndexMeter({ indexKey, value, flash }: { indexKey: IndexKey; value: number; flash?: 'gain' | 'loss' }) {
-  const prevValueRef = useRef<number>(value);
-  const [badge, setBadge] = useState<{ id: number; text: string; type: 'gain' | 'loss' } | null>(null);
-  const badgeCounter = useRef(0);
-
-  useEffect(() => {
-    const prev = prevValueRef.current;
-    if (prev !== value) {
-      const diff = value - prev;
-      badgeCounter.current += 1;
-      setBadge({
-        id: badgeCounter.current,
-        text: diff > 0 ? `+${diff}` : `${diff}`,
-        type: diff > 0 ? 'gain' : 'loss',
-      });
-      prevValueRef.current = value;
-    }
-  }, [value]);
-
-  useEffect(() => {
-    if (badge) {
-      const timeout = setTimeout(() => {
-        setBadge(null);
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [badge]);
+  const badge = useDeltaBadge(value);
 
   return (
     <div className={`index-meter ${indexKey} ${flash ? `flash-${flash}` : ''}`}>
@@ -44,11 +19,7 @@ export function IndexMeter({ indexKey, value, flash }: { indexKey: IndexKey; val
         <span>{indexLabels[indexKey]}</span>
         <div className="value-container">
           <strong>{value}</strong>
-          {badge && (
-            <span key={badge.id} className={`delta-badge ${badge.type}`}>
-              {badge.text}
-            </span>
-          )}
+          {badge && <span key={badge.id} className={`delta-badge ${badge.type}`}>{badge.text}</span>}
         </div>
       </div>
       <div className="meter-track">
