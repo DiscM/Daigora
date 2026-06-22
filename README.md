@@ -2,6 +2,12 @@
 
 An interactive, strategic planetary management card game built using **React**, **TypeScript**, and **Vite**. As the lead administrator of the Earth Council, your mission is to guide the planet through **20 critical turns** of escalating environmental, economic, and social crises. Build trust, repair ecosystems, maintain economic flow, and coordinate international policy to prevent a final, cascading global collapse.
 
+## Gameplay
+
+![Choose advisors and prepare for the Earth Council briefing](screenshots/readme/setup.png)
+
+![Manage a planetary crisis by playing cards and balancing readiness indexes](screenshots/readme/gameplay.png)
+
 
 ## ⚙️ Core Game Mechanics
 
