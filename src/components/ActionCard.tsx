@@ -18,9 +18,12 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
     }, 350);
   };
 
+  const isUpgraded = instance.defId.endsWith('-upgraded');
+  const displayName = card.name.endsWith('+') ? card.name.slice(0, -1) : card.name;
+
   return (
     <button
-      className={`action-card ${typeClass} ${isPlaying ? 'is-playing' : ''}`}
+      className={`action-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${isPlaying ? 'is-playing' : ''}`}
       onClick={handlePlay}
       disabled={!legal.ok || isPlaying}
       title={legal.reason ?? ''}
@@ -30,7 +33,10 @@ export function ActionCard({ game, instance, onPlay }: { game: GameState; instan
           {cost.ap > 0 || cost.pp === 0 ? <span className="card-cost ap">{cost.ap}</span> : null}
           {cost.pp > 0 ? <span className="card-cost pp">{cost.pp}</span> : null}
         </span>
-        <strong>{card.name}</strong>
+        <strong>
+          {displayName}
+          {isUpgraded && <span className="upgraded-badge">+</span>}
+        </strong>
       </span>
       <span className={`card-art ${typeClass}`} aria-hidden="true" />
       <p>{card.text}</p>

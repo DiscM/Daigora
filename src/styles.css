@@ -1951,7 +1951,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 
 .bottom-console .action-card {
   max-width: none;
-  min-height: 110px;
+  min-height: 165px;
   grid-template-rows: 26px minmax(40px, 1fr);
   gap: 5px;
   padding: 8px;
@@ -2136,7 +2136,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .action-card {
   position: relative;
   min-width: 0;
-  min-height: 0;
+  min-height: 165px;
   max-width: 142px;
   height: 100%;
   display: grid;
@@ -2998,4 +2998,296 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   .bottom-console .side-actions { grid-template-columns: 1fr; }
   .bottom-console .active-projects,
   .bottom-console .quick-actions { grid-column: auto; grid-row: auto; }
+}
+
+/* ============================================================
+   Upgraded Card & Draft Overlay Styles
+   ============================================================ */
+
+.action-card.is-upgraded,
+.static-card.is-upgraded {
+  border-color: var(--sp-gold) !important;
+  border-width: 2px !important;
+  box-shadow: 0 4px 14px rgba(233, 196, 106, 0.24), inset 0 0 10px rgba(233, 196, 106, 0.08);
+}
+
+.action-card.is-upgraded:hover:not(:disabled),
+.static-card.is-upgraded:hover:not(:disabled) {
+  border-color: var(--sp-gold) !important;
+  box-shadow: 0 8px 24px rgba(233, 196, 106, 0.45), inset 0 0 12px rgba(233, 196, 106, 0.16) !important;
+}
+
+.upgraded-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  width: 15px;
+  height: 15px;
+  background: linear-gradient(135deg, var(--sp-gold), var(--sp-amber));
+  color: var(--sp-forest) !important;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 3px rgba(233, 196, 106, 0.6);
+  vertical-align: middle;
+  text-shadow: none !important;
+}
+
+.draft-upgrade-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: rgba(23, 47, 34, 0.72);
+  backdrop-filter: blur(18px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.draft-upgrade-container {
+  width: min(1120px, 96vw);
+  max-height: 92vh;
+  background: var(--hd-panel);
+  border: 2px solid rgba(212, 144, 62, 0.4);
+  border-radius: var(--radius-leaf-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.draft-upgrade-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid rgba(82, 114, 93, 0.12);
+}
+
+.draft-upgrade-header h2 {
+  font-family: var(--serif);
+  color: var(--sp-forest);
+  font-size: 1.7rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.draft-upgrade-header p {
+  color: var(--hd-muted);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.draft-upgrade-split {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-items: stretch;
+  padding: 10px 0;
+}
+
+.draft-section,
+.upgrade-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.draft-section h3,
+.upgrade-section h3 {
+  font-family: var(--serif);
+  color: var(--sp-forest);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.draft-section .section-subtitle,
+.upgrade-section .section-subtitle {
+  font-size: 0.74rem;
+  color: var(--hd-muted);
+  margin: 0 0 16px;
+}
+
+.draft-card-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  align-content: start;
+}
+
+.draft-card-options .static-card {
+  margin: 0;
+  min-height: 174px;
+}
+
+.vertical-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 24px;
+}
+
+.vertical-divider .divider-line {
+  width: 1.5px;
+  background: rgba(82, 114, 93, 0.12);
+  flex: 1;
+}
+
+.vertical-divider .divider-orb {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--sp-moss);
+  padding: 5px 6px;
+  border: 1.5px solid rgba(82, 114, 93, 0.2);
+  border-radius: 50%;
+  background: var(--sp-cream);
+  box-shadow: var(--hd-shadow-sm);
+}
+
+.upgrade-comparison-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 8px;
+}
+
+.upgrade-comparison-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid rgba(82, 114, 93, 0.12);
+  border-radius: 16px;
+  background: rgba(253, 251, 246, 0.42);
+  transition: all 0.25s ease;
+}
+
+.upgrade-comparison-row:hover {
+  border-color: rgba(233, 196, 106, 0.4);
+  background: rgba(253, 251, 246, 0.62);
+  transform: translateY(-1.5px);
+  box-shadow: var(--hd-shadow-md);
+}
+
+.upgrade-cards-side-by-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.comparison-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+
+.comparison-card-wrapper .static-card {
+  width: 100%;
+  min-height: 164px;
+}
+
+.comparison-card-wrapper .card-state-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--sp-moss);
+  opacity: 0.76;
+  letter-spacing: 0.06em;
+}
+
+.upgrade-arrow-indicator {
+  font-size: 1.5rem;
+  color: var(--sp-moss);
+  opacity: 0.6;
+}
+
+.upgrade-action-btn {
+  align-self: center;
+  width: 100%;
+  max-width: 220px;
+}
+
+.no-upgrades-container {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  border: 2px dashed rgba(82, 114, 93, 0.12);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.015);
+  padding: 24px;
+}
+
+.no-upgrades-msg {
+  color: var(--hd-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+}
+
+.draft-upgrade-footer {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1.5px solid rgba(82, 114, 93, 0.12);
+}
+
+.skip-phase-btn {
+  min-height: 38px;
+  padding: 0 24px;
+  border-radius: var(--radius-leaf-sm);
+}
+
+.game-mode-select {
+  border: 2px solid var(--hd-border);
+  padding: 7px 10px;
+  color: var(--hd-text);
+  background: var(--hd-darker);
+  border-radius: var(--radius-leaf-sm);
+  outline: none;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
+}
+
+.game-mode-select:focus {
+  border-color: var(--sp-fern);
+}
+
+@media (max-width: 900px) {
+  .draft-upgrade-split {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .vertical-divider {
+    flex-direction: row;
+    width: 100%;
+    height: 24px;
+  }
+  .vertical-divider .divider-line {
+    height: 1.5px;
+    width: 100%;
+  }
+  .draft-upgrade-container {
+    max-height: 96vh;
+  }
+  .draft-card-options {
+    grid-template-columns: 1fr;
+  }
 }

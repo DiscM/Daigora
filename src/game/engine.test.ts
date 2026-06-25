@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from './content';
-import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, getLegalActions, playCard, resolveFinalCrisis, startTurn } from './engine';
+import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, getLegalActions, playCard, resolveFinalCrisis, startTurn, draftCard, upgradeCard, skipDraftOrUpgrade } from './engine';
 import type { GameState } from './types';
 
 function findCard(state: GameState, defId: string) {
@@ -407,7 +407,7 @@ describe('Heal the Planet engine', () => {
     const next = startTurn(state);
     
     expect(next.indexes.coordination).toBe(3); // Lost 2 coordination due to calamity
-    expect(next.indexes.trust).toBe(1); // Baseline: -3 Trust (4 -> 1)
+    expect(next.indexes.trust).toBe(0); // Baseline: -3 Trust (3 -> 0)
   });
 
   it('can simulate deterministic games across advisor sets without stalling', () => {
@@ -425,12 +425,94 @@ describe('Heal the Planet engine', () => {
     expect(results.every((state) => state.phase === 'gameOver')).toBe(true);
     expect(results.some((state) => state.finalRating !== 'Collapse')).toBe(true);
   });
+
+  it('supports campaign and workshop modes with appropriate starting states and crisis thresholds', () => {
+    const campaignGame = createGame('camp-test', [], 'campaign');
+    expect(campaignGame.gameMode).toBe('campaign');
+    expect(campaignGame.turnLimit).toBe(20);
+    expect(campaignGame.planetHealth).toBe(24);
+    expect(campaignGame.indexes.trust).toBe(3);
+
+    const workshopGame = createGame('work-test', [], 'workshop');
+    expect(workshopGame.gameMode).toBe('workshop');
+    expect(workshopGame.turnLimit).toBe(10);
+    expect(workshopGame.planetHealth).toBe(20);
+    expect(workshopGame.indexes.ecology).toBe(3);
+
+    // Reset health and indexes to baseline clean states to test thresholds in isolation
+    campaignGame.planetHealth = 24;
+    campaignGame.indexes = { trust: 3, ecology: 3, economy: 3, coordination: 3 };
+
+    workshopGame.planetHealth = 20;
+    workshopGame.indexes = { trust: 3, ecology: 3, economy: 3, coordination: 3 };
+
+    // Test final crisis thresholds by resolving directly
+    const nextCampaign = resolveFinalCrisis(campaignGame);
+    // Campaign default: threshold is 6. With starting indexes 3 (all < 6), no mitigation applies.
+    // Damage = 20. Net health = 24 - 20 = 4.
+    expect(nextCampaign.planetHealth).toBe(4);
+
+    const nextWorkshop = resolveFinalCrisis(workshopGame);
+    // Workshop default: threshold is 5. With starting indexes 3 (all < 5), no mitigation applies.
+    // Damage = 16. Net health = 20 - 16 = 4.
+    expect(nextWorkshop.planetHealth).toBe(4);
+  });
+
+  it('supports drafting a card at the end of a turn', () => {
+    let state = createGame('draft-test', []);
+    state.turn = 1;
+    state.turnLimit = 2;
+    state.phase = 'play';
+    // endTurn transitions to draftOrUpgrade
+    state = endTurn(state);
+    expect(state.phase).toBe('draftOrUpgrade');
+    expect(state.draftOptions).toHaveLength(3);
+
+    const selectedDraft = state.draftOptions[0];
+    state = draftCard(state, selectedDraft);
+    // draftCard adds selected card to discard and restarts turn
+    expect(state.phase).toBe('play');
+    expect(state.turn).toBe(2);
+    expect(state.discard.some((card) => card.defId === selectedDraft)).toBe(true);
+  });
+
+  it('supports upgrading a card at the end of a turn', () => {
+    let state = createGame('upgrade-test', []);
+    state.hand = [];
+    state.deck = [{ defId: 'community-workshop', instanceId: 'cg-1' }, { defId: 'community-workshop', instanceId: 'cg-2' }];
+    state.discard = [{ defId: 'community-workshop', instanceId: 'cg-3' }];
+    state.phase = 'draftOrUpgrade';
+
+    // Upgrade community-workshop to community-workshop-upgraded
+    state = upgradeCard(state, 'community-workshop');
+    expect(state.phase).toBe('play');
+    // Ensure one of cg-1, cg-2, or cg-3 has been upgraded to the correct defId
+    const allCards = [...state.hand, ...state.deck, ...state.discard];
+    expect(allCards.some((card) => card.defId === 'community-workshop-upgraded')).toBe(true);
+    expect(allCards.filter((card) => card.defId === 'community-workshop')).toHaveLength(2);
+  });
+
+  it('supports skipping drafting or upgrading', () => {
+    let state = createGame('skip-test', []);
+    state.phase = 'draftOrUpgrade';
+    state = skipDraftOrUpgrade(state);
+    expect(state.phase).toBe('play');
+  });
 });
 
 function simulateGreedyGame(seed: string, advisorIds: string[]): GameState {
   let state = createGame(seed, advisorIds);
   let guard = 0;
   while (state.phase !== 'gameOver' && guard < 200) {
+    if (state.phase === 'draftOrUpgrade') {
+      if (state.draftOptions && state.draftOptions.length > 0) {
+        state = draftCard(state, state.draftOptions[0]);
+      } else {
+        state = skipDraftOrUpgrade(state);
+      }
+      guard += 1;
+      continue;
+    }
     let legalActions = getLegalActions(state);
     while (legalActions.length > 0 && guard < 200) {
       state = playCard(state, legalActions[0]);

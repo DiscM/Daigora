@@ -1,5 +1,5 @@
 export type IndexKey = 'trust' | 'ecology' | 'economy' | 'coordination';
-export type Phase = 'setup' | 'play' | 'final' | 'gameOver';
+export type Phase = 'setup' | 'play' | 'draftOrUpgrade' | 'final' | 'gameOver';
 export const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
 export type CardType = 'Education' | 'Environmental Work' | 'Technology' | 'Policy' | 'Emergency' | 'Status';
 export type StatusKind = 'Pollution' | 'Apathy' | 'Misinformation' | 'Delay' | 'Backlash';
@@ -14,7 +14,8 @@ export type Effect =
   | { kind: 'preventDamage'; amount: number }
   | { kind: 'ongoingShield'; tag: string; amount: number }
   | { kind: 'peekCrisis'; amount: number }
-  | { kind: 'discountNext'; cardType: CardType; amount: number };
+  | { kind: 'discountNext'; cardType: CardType; amount: number }
+  | { kind: 'addStatus'; status: StatusKind };
 
 export interface CardDefinition {
   id: string;
@@ -26,6 +27,7 @@ export interface CardDefinition {
   keywords?: Array<'Draw' | 'Exhaust' | 'Ongoing' | 'Retain' | 'Cleanse'>;
   effects: Effect[];
   unplayable?: boolean;
+  upgradesTo?: string;
 }
 
 export interface CrisisDefinition {
@@ -78,6 +80,9 @@ export interface GameState {
   seed: string;
   rngState: number;
   phase: Phase;
+  gameMode: 'campaign' | 'workshop';
+  turnLimit: number;
+  draftOptions: string[];
   turn: number;
   planetHealth: number;
   maxPlanetHealth: number;

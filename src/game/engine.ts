@@ -206,6 +206,10 @@ function applyEffect(state: GameState, effect: Effect): void {
     case 'discountNext':
       state.thisTurnCostPenalty[effect.cardType] = (state.thisTurnCostPenalty[effect.cardType] ?? 0) - effect.amount;
       break;
+    case 'addStatus':
+      addStatusToDiscard(state, effect.status);
+      state.log = addLog(state, `Added ${effect.status} status to discard.`);
+      break;
   }
 }
 
@@ -248,25 +252,29 @@ function applyAidSetup(state: GameState): void {
   }
 }
 
-export function createGame(seed = 'earth-month', selectedAidIds = ['educator', 'disaster-responder']): GameState {
+export function createGame(seed = 'earth-month', selectedAidIds = ['educator', 'disaster-responder'], gameMode: 'campaign' | 'workshop' = 'campaign'): GameState {
   let rngState = hashSeed(seed);
   const [deck, deckState] = shuffleWithState(makeInstances(starterDeckIds, 'starter'), rngState);
   rngState = deckState;
-  const crisisIds = Array.from({ length: Math.ceil(GAME_TURN_LIMIT / crises.length) }, () => crises.map((crisis) => crisis.id))
+  const turnLimit = gameMode === 'workshop' ? 10 : 20;
+  const crisisIds = Array.from({ length: Math.ceil(turnLimit / crises.length) }, () => crises.map((crisis) => crisis.id))
     .flat()
-    .slice(0, GAME_TURN_LIMIT);
+    .slice(0, turnLimit);
   const [crisisDeck, crisisState] = shuffleWithState(crisisIds, rngState);
   rngState = crisisState;
   const state: GameState = {
     seed,
     rngState,
     phase: 'setup',
+    gameMode,
+    turnLimit,
+    draftOptions: [],
     turn: 0,
-    planetHealth: 24,
-    maxPlanetHealth: 24,
+    planetHealth: gameMode === 'campaign' ? 24 : 20,
+    maxPlanetHealth: gameMode === 'campaign' ? 24 : 20,
     actionPoints: 0,
     policyPoints: 0,
-    indexes: { trust: 4, ecology: 4, economy: 4, coordination: 4 },
+    indexes: { trust: 3, ecology: 3, economy: 3, coordination: 3 },
     selectedAidIds,
     crisisDeck,
     crisisDiscard: [],
@@ -298,7 +306,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
 export function startTurn(input: GameState): GameState {
   const state = cloneState(input);
   if (state.phase === 'gameOver') return state;
-  if (state.turn >= GAME_TURN_LIMIT) return resolveFinalCrisis(state);
+  if (state.turn >= state.turnLimit) return resolveFinalCrisis(state);
   state.phase = 'play';
   state.turn += 1;
   state.actionPoints = state.turn >= 6 ? 4 : 3;
@@ -490,27 +498,35 @@ export function endTurn(input: GameState): GameState {
     checkLoss(state);
     return state;
   }
+  if (state.turn < state.turnLimit) {
+    state.phase = 'draftOrUpgrade';
+    state.draftOptions = getDraftOptions(state);
+    return state;
+  }
   return startTurn(state);
 }
 
 export function resolveFinalCrisis(input: GameState): GameState {
   const state = cloneState(input);
   state.phase = 'final';
-  let damage = 16;
-  if (state.indexes.trust >= 5) damage -= 3;
-  if (state.indexes.ecology >= 5) damage -= 4;
-  if (state.indexes.economy >= 5) damage -= 3;
-  if (state.indexes.coordination >= 5) damage -= 4;
-  if (INDEX_KEYS.every((key) => state.indexes[key] >= 5)) damage -= 3;
+  const isWorkshop = state.gameMode === 'workshop';
+  const threshold = isWorkshop ? 5 : 6;
+  let damage = isWorkshop ? 16 : 20;
+
+  if (state.indexes.trust >= threshold) damage -= 3;
+  if (state.indexes.ecology >= threshold) damage -= 4;
+  if (state.indexes.economy >= threshold) damage -= 3;
+  if (state.indexes.coordination >= threshold) damage -= 4;
+  if (INDEX_KEYS.every((key) => state.indexes[key] >= threshold)) damage -= 3;
   if (INDEX_KEYS.some((key) => state.indexes[key] <= 2)) damage += 3;
   if (INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length >= 2) applyHealth(state, -3);
   applyHealth(state, -Math.max(0, damage));
 
-  const stableCount = INDEX_KEYS.filter((key) => state.indexes[key] >= 5).length;
-  const vulnerableOrCritical = INDEX_KEYS.filter((key) => state.indexes[key] <= 5).length;
+  const stableCount = INDEX_KEYS.filter((key) => state.indexes[key] >= threshold).length;
+  const vulnerableOrCritical = INDEX_KEYS.filter((key) => state.indexes[key] <= threshold).length;
   let rating = 'Collapse';
   if (state.planetHealth > 10 && INDEX_KEYS.every((key) => state.indexes[key] >= 9)) rating = 'Regenerative Future';
-  else if (state.planetHealth > 0 && INDEX_KEYS.every((key) => state.indexes[key] >= 5)) rating = 'Resilient Future';
+  else if (state.planetHealth > 0 && INDEX_KEYS.every((key) => state.indexes[key] >= threshold)) rating = 'Resilient Future';
   else if (state.planetHealth > 0 && stableCount >= 2) rating = 'Stabilization';
   else if (state.planetHealth > 0 && vulnerableOrCritical >= 2) rating = 'Survival';
   state.phase = 'gameOver';
@@ -522,4 +538,78 @@ export function resolveFinalCrisis(input: GameState): GameState {
 
 export function getLegalActions(state: GameState): string[] {
   return state.hand.filter((card) => canPlayCard(state, card.instanceId).ok).map((card) => card.instanceId);
+}
+
+import { draftCardIds } from './content';
+
+function getDraftOptions(state: GameState): string[] {
+  const options: string[] = [];
+  let rng = state.rngState;
+  const pool = [...draftCardIds];
+  while (options.length < 3 && pool.length > 0) {
+    const [random, nextRng] = nextRandom(rng);
+    rng = nextRng;
+    const index = Math.floor(random * pool.length);
+    options.push(pool.splice(index, 1)[0]);
+  }
+  state.rngState = rng;
+  return options;
+}
+
+export function draftCard(input: GameState, cardId: string): GameState {
+  const state = cloneState(input);
+  if (state.phase !== 'draftOrUpgrade') return state;
+  const inst = { instanceId: nextInstanceId(state, 'draft'), defId: cardId };
+  state.discard.push(inst);
+  state.draftOptions = [];
+  return startTurn(state);
+}
+
+export function upgradeCard(input: GameState, defId: string): GameState {
+  const state = cloneState(input);
+  if (state.phase !== 'draftOrUpgrade') return state;
+  const upgradedId = cardById[defId]?.upgradesTo;
+  if (upgradedId) {
+    let replaced = false;
+    // Try hand
+    for (let i = 0; i < state.hand.length; i++) {
+      if (state.hand[i].defId === defId) {
+        state.hand[i].defId = upgradedId;
+        replaced = true;
+        break;
+      }
+    }
+    // Try deck
+    if (!replaced) {
+      for (let i = 0; i < state.deck.length; i++) {
+        if (state.deck[i].defId === defId) {
+          state.deck[i].defId = upgradedId;
+          replaced = true;
+          break;
+        }
+      }
+    }
+    // Try discard
+    if (!replaced) {
+      for (let i = 0; i < state.discard.length; i++) {
+        if (state.discard[i].defId === defId) {
+          state.discard[i].defId = upgradedId;
+          replaced = true;
+          break;
+        }
+      }
+    }
+    if (replaced) {
+      state.log = addLog(state, `Upgraded ${cardById[defId].name} to ${cardById[upgradedId].name}.`);
+    }
+  }
+  state.draftOptions = [];
+  return startTurn(state);
+}
+
+export function skipDraftOrUpgrade(input: GameState): GameState {
+  const state = cloneState(input);
+  if (state.phase !== 'draftOrUpgrade') return state;
+  state.draftOptions = [];
+  return startTurn(state);
 }
