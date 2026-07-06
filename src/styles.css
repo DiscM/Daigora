@@ -2198,6 +2198,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .bottom-console .action-card strong {
   min-width: 0;
+  overflow: hidden;
   padding-left: 0;
   font-family: var(--pixel);
   font-size: 0.7rem;
@@ -2207,6 +2208,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   text-transform: uppercase;
   color: var(--bit-text-dark);
   text-shadow: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bottom-console .action-card.upgraded strong { color: var(--bit-orange-deep); }
@@ -2476,7 +2479,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-height: 28px;
 }
 
 .card-costs {
@@ -2517,6 +2521,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   line-height: 1.2;
   text-transform: uppercase;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-art {
@@ -3176,7 +3181,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
     var(--shadow-pixel-lg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   padding: 22px 24px;
   color: var(--bit-text);
 }
@@ -3254,7 +3259,11 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .draft-card-options .static-card {
   margin: 0;
-  min-height: 200px;
+  min-height: 210px;
+}
+
+.draft-card-options .static-card p {
+  -webkit-line-clamp: 4;
 }
 
 .vertical-divider {
@@ -3297,8 +3306,9 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .upgrade-comparison-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding: 14px;
+  min-height: 0;
   background: var(--bit-bg-deep);
   border: 3px solid var(--bit-gold-deep);
   box-shadow:
@@ -3317,9 +3327,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .upgrade-cards-side-by-side {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
+  min-height: 0;
 }
 
 .comparison-card-wrapper {
@@ -3332,7 +3343,16 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .comparison-card-wrapper .static-card {
   width: 100%;
-  min-height: 180px;
+  min-height: 200px;
+  min-width: 0;
+}
+
+.comparison-card-wrapper .static-card p {
+  -webkit-line-clamp: 4;
+}
+
+.comparison-card-wrapper {
+  min-width: 0;
 }
 
 .comparison-card-wrapper .card-state-label {
@@ -3408,6 +3428,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   .draft-upgrade-split {
     flex-direction: column;
     overflow-y: auto;
+    min-height: 0;
+    flex-shrink: 1;
   }
   .vertical-divider {
     flex-direction: row;
@@ -3424,6 +3446,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   .draft-card-options {
     grid-template-columns: 1fr;
   }
+  .retire-card-list {
+    max-height: 200px;
+  }
+  .upgrade-cards-side-by-side {
+    gap: 8px;
+  }
 }
 
 /* ============================================================
@@ -3432,8 +3460,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .static-card {
   display: grid;
-  grid-template-rows: 32px 80px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-rows: auto 60px minmax(0, 1fr);
+  gap: 6px;
   padding: 12px;
   background: var(--bit-paper);
   border: 4px solid var(--bit-shadow);
@@ -3469,12 +3497,41 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   background: var(--bit-paper);
 }
 
-/* Retired card list */
+/* Retired card section */
+.retire-section {
+  min-height: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+
+.retire-section h3 {
+  font-family: var(--pixel);
+  color: var(--bit-cyan);
+  font-size: 0.86rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--bit-shadow);
+}
+
+.retire-section .section-subtitle {
+  font-size: 1rem;
+  color: var(--bit-text);
+  font-family: var(--sans);
+  margin: 0 0 14px;
+}
+
 .retire-card-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
   background: var(--bit-bg-deep);
   border: 3px solid var(--bit-orange-deep);
   box-shadow:
@@ -3491,6 +3548,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   background: var(--bit-panel);
   border: 2px solid var(--bit-shadow);
   box-shadow: 2px 2px 0 var(--bit-shadow);
+  min-height: 0;
+}
+
+.retire-card-item .static-card {
+  min-height: 180px;
+}
+
+.retire-card-item .static-card p {
+  -webkit-line-clamp: 4;
 }
 
 .retire-action-btn { width: 100%; }
