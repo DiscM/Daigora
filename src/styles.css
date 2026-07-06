@@ -1602,7 +1602,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   overflow: hidden;
   color: var(--bit-gold);
   font-family: var(--pixel);
-  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  font-size: 0.88rem;
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1.15;
@@ -1707,7 +1707,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   justify-self: end;
   color: var(--bit-text-dark);
   font-family: var(--pixel);
-  font-size: clamp(0.72rem, 0.85vw, 0.92rem);
+  font-size: 0.82rem;
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: 0.02em;
@@ -1807,7 +1807,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   grid-template-rows: auto auto;
   column-gap: 10px;
   align-items: center;
-  min-height: 56px;
+  height: 56px;
   padding: 6px 0;
   background: transparent;
   border: 0;
@@ -1957,6 +1957,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .session-panel .brand {
   min-height: 0;
+  height: 56px;
   padding: 8px 10px;
   background: var(--bit-bg-deep);
   border: 2px solid var(--bit-gold-deep);
@@ -1966,7 +1967,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .session-panel .brand h1 {
   white-space: normal;
   color: var(--bit-gold) !important;
-  font-size: clamp(0.78rem, 0.92vw, 0.95rem);
+  font-size: 0.84rem;
   letter-spacing: 0.02em;
 }
 
@@ -1982,6 +1983,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .bottom-console .resource-strip {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  height: 84px;
 }
 
 .bottom-console .resource {
@@ -1990,7 +1992,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   align-items: center;
   grid-template-rows: auto;
   gap: 6px;
-  min-height: 38px;
+  height: 38px;
   padding: 6px 8px;
   font-family: var(--pixel);
   box-shadow:
@@ -2057,7 +2059,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   justify-self: end;
   color: var(--bit-text-dark) !important;
   font-family: var(--pixel);
-  font-size: clamp(0.7rem, 0.78vw, 0.84rem);
+  font-size: 0.76rem;
   letter-spacing: 0.04em;
   text-overflow: ellipsis;
   text-shadow: 1px 1px 0 rgba(0,0,0,0.28);
@@ -2089,7 +2091,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 }
 
 .bottom-console .crisis-panel h2 {
-  font-size: clamp(0.74rem, 0.86vw, 0.92rem);
+  font-size: 0.82rem;
   line-height: 1.2;
   padding: 8px 10px;
   color: var(--bit-text-dark) !important;
@@ -2263,7 +2265,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .bottom-console .index-meter {
   grid-template-columns: 32px minmax(0, 1fr) 36px;
   column-gap: 8px;
-  min-height: 56px;
+  height: 56px;
   padding-bottom: 0;
   border-bottom: 0;
 }
@@ -2279,7 +2281,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .bottom-console .index-icon svg { width: 18px; height: 18px; }
 
 .bottom-console .meter-label span {
-  font-size: clamp(0.62rem, 0.74vw, 0.78rem);
+  font-size: 0.68rem;
   color: var(--bit-gold);
   font-family: var(--pixel);
   font-weight: 400;
@@ -2391,7 +2393,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .bottom-console .end-turn {
   min-height: 56px;
   height: 100%;
-  font-size: clamp(0.78rem, 0.92vw, 1rem);
+  font-size: 0.82rem;
 }
 
 .bottom-console .setup-popover {
@@ -2732,7 +2734,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
     inset 0 0 0 2px var(--bit-bg-deep),
     4px 4px 0 var(--bit-shadow);
   font-family: var(--pixel);
-  font-size: clamp(0.78rem, 0.92vw, 1rem);
+  font-size: 0.82rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2894,7 +2896,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
   .session-panel { padding: 10px; }
 
-  .session-panel .brand h1 { font-size: clamp(0.74rem, 0.92vw, 0.92rem); }
+  .session-panel .brand h1 { font-size: 0.78rem; }
 
   .bottom-console .resource-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2902,7 +2904,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   }
 
   .bottom-console .resource {
-    min-height: 40px;
+    height: 40px;
   }
 
   .bottom-console .crisis-effects,
@@ -2975,10 +2977,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
     grid-template-columns: minmax(240px, 0.95fr) minmax(220px, 1.1fr) minmax(420px, 2.3fr) minmax(220px, 1.15fr) minmax(180px, 0.85fr);
   }
 
-  .session-panel .brand h1 { font-size: clamp(0.82rem, 1vw, 0.98rem); }
+  .session-panel .brand h1 { font-size: 0.88rem; }
 
   .bottom-console .resource {
-    min-height: 44px;
+    height: 44px;
   }
 
   .bottom-console .hand-row {

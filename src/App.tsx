@@ -17,10 +17,21 @@ type FeedbackKind = 'card' | 'damage' | 'debuff' | 'avert' | 'gain';
 
 function useViewportScale(ref: React.RefObject<HTMLElement | null>, reFitDeps: React.DependencyList = []) {
   const refitRef = useRef<(() => void) | null>(null);
+  const lastScaleRef = useRef(1);
 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const SCALE_THRESHOLD = 0.03;
+
+    const applyScale = (scale: number) => {
+      if (Math.abs(scale - lastScaleRef.current) < SCALE_THRESHOLD) return;
+      lastScaleRef.current = scale;
+      el.style.transform = `scale(${scale})`;
+    };
+
     const refit = () => {
       const w = el.scrollWidth;
       const h = el.scrollHeight;
@@ -28,16 +39,20 @@ function useViewportScale(ref: React.RefObject<HTMLElement | null>, reFitDeps: R
       const vh = window.innerHeight;
       if (!w || !h || !vw || !vh) return;
       const scale = Math.min(vw / w, vh / h);
-      el.style.transform = `scale(${scale})`;
+      applyScale(scale);
     };
+
+    const debouncedRefit = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(refit, 120);
+    };
+
     refitRef.current = refit;
     refit();
-    window.addEventListener('resize', refit);
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(refit) : null;
-    if (ro) ro.observe(el);
+    window.addEventListener('resize', debouncedRefit);
     return () => {
-      window.removeEventListener('resize', refit);
-      ro?.disconnect();
+      window.removeEventListener('resize', debouncedRefit);
+      clearTimeout(resizeTimer);
     };
   }, [ref]);
 
