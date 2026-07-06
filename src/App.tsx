@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Menu, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { projectAids, cardById } from './game/content';
-import { createGame, endTurn, playCard, draftCard, upgradeCard, skipDraftOrUpgrade } from './game/engine';
+import { createGame, endTurn, playCard, draftCard, upgradeCard, retireCard, getRetireableCards, resolveCrisisChoice, useAdvisorAbility, skipDraftOrUpgrade } from './game/engine';
 import type { GameState, IndexKey } from './game/types';
 import { INDEX_KEYS } from './game/types';
 import { Resource } from './components/Resource';
@@ -46,6 +46,7 @@ export function App() {
   const [seed, setSeed] = useState(game?.seed ?? 'earth-month');
   const [selectedAidIds, setSelectedAidIds] = useState<string[]>(game?.selectedAidIds ?? DEFAULT_AIDS);
   const [gameMode, setGameMode] = useState<'campaign' | 'workshop'>(game?.gameMode ?? 'campaign');
+  const [difficulty, setDifficulty] = useState<'normal' | 'hard' | 'apocalypse'>('normal');
   const [feedback, setFeedback] = useState<FeedbackEvent[]>([]);
   const [flashes, setFlashes] = useState<FlashState>({ indexes: {} });
   const [flashTick, setFlashTick] = useState(0);
@@ -91,7 +92,7 @@ export function App() {
 
   function startGameFromSetup() {
     const chosen = selectedAidIds.slice(0, 3);
-    const next = createGame(seed.trim() || 'earth-month', chosen.length ? chosen : DEFAULT_AIDS, gameMode);
+    const next = createGame(seed.trim() || 'earth-month', chosen.length ? chosen : DEFAULT_AIDS, gameMode, difficulty);
     previousGame.current = null;
     setFeedback([]);
     setFlashes({ indexes: {} });
@@ -177,6 +178,18 @@ export function App() {
                 <option value="workshop">Workshop Mode (10 Turns, 20 HP)</option>
               </select>
             </label>
+            <label className="seed-control select-mode-control">
+              <span>Difficulty</span>
+              <select
+                value={difficulty}
+                onChange={(event) => setDifficulty(event.target.value as 'normal' | 'hard' | 'apocalypse')}
+                className="game-mode-select"
+              >
+                <option value="normal">Normal</option>
+                <option value="hard">Hard (start: indexes 2, HP -2)</option>
+                <option value="apocalypse">Apocalypse (start: indexes 1, HP -4)</option>
+              </select>
+            </label>
             <label className="seed-control">
               <span>Seed</span>
               <input value={seed} onChange={(event) => setSeed(event.target.value)} />
@@ -259,11 +272,23 @@ export function App() {
           {gameAids.map((aid) => (
             <div className="aid-token" key={aid.id} tabIndex={0}>
               <span>{aid.name.replace('The ', '')}</span>
+              {aid.ability && (
+                <button
+                  className={`aid-ability-btn ${game.advisorAbilityUsed[aid.id] ? 'used' : ''}`}
+                  disabled={game.advisorAbilityUsed[aid.id] || game.phase === 'gameOver'}
+                  onClick={() => setGame((s) => s ? useAdvisorAbility(s, aid.id) : s)}
+                  type="button"
+                  title={aid.ability}
+                >
+                  {game.advisorAbilityUsed[aid.id] ? 'Used' : 'Ability'}
+                </button>
+              )}
               <span className="aid-tooltip" role="tooltip">
                 <b>Benefit</b>
                 {aid.passive}
                 <b>Drawback</b>
                 {aid.drawback}
+                {aid.ability && <><b>Ability</b>{aid.ability}</>}
               </span>
             </div>
           ))}
@@ -328,13 +353,37 @@ export function App() {
                 </div>
               </div>
             </details>
-            <button className="end-turn" onClick={() => setGame((state) => (state ? endTurn(state) : state))} disabled={game.phase !== 'play'}>
+            <button className="end-turn" onClick={() => setGame((state) => (state ? endTurn(state) : state))} disabled={game.phase !== 'play' || Boolean(game.pendingCrisisChoice)}>
               End Turn
             </button>
           </div>
         </div>
       </section>
 
+      {game.pendingCrisisChoice && (
+        <div className="crisis-choice-overlay">
+          <div className="draft-upgrade-container">
+            <div className="draft-upgrade-header">
+              <h2>Crisis Response Required</h2>
+              <p>{game.pendingCrisisChoice.text}</p>
+            </div>
+            <div className="crisis-choice-grid">
+              {game.pendingCrisisChoice.options.map((option, index) => (
+                <div key={index} className="crisis-choice-card">
+                  <p className="choice-text">{option.text}</p>
+                  <button
+                    className="filled-button crisis-choice-btn"
+                    onClick={() => setGame((state) => state ? resolveCrisisChoice(state, index) : null)}
+                    type="button"
+                  >
+                    Choose This Response
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {game.phase === 'draftOrUpgrade' && (
         <div className="draft-upgrade-overlay">
           <div className="draft-upgrade-container">
@@ -398,6 +447,33 @@ export function App() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="retire-section">
+              <h3>Option C: Retire a Card</h3>
+              <p className="section-subtitle">Permanently remove a card from your deck to improve consistency</p>
+              {(() => {
+                const retireable = getRetireableCards(game);
+                if (retireable.length === 0) {
+                  return <div className="no-upgrades-container"><p className="no-upgrades-msg">No cards to retire.</p></div>;
+                }
+                return (
+                  <div className="retire-card-list">
+                    {retireable.map((card) => (
+                      <div key={card.id} className="retire-card-item">
+                        <StaticCard defId={card.id} />
+                        <button
+                          className="tonal-button retire-action-btn"
+                          onClick={() => setGame((state) => state ? retireCard(state, card.id) : null)}
+                          type="button"
+                        >
+                          Retire {card.name}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="draft-upgrade-footer">
@@ -487,10 +563,17 @@ function normalizeSavedGame(saved: GameState): GameState {
   return {
     ...saved,
     gameMode: saved.gameMode ?? 'campaign',
+    difficulty: saved.difficulty ?? 'normal',
     turnLimit: saved.turnLimit ?? (saved.gameMode === 'workshop' ? 10 : 20),
     draftOptions: saved.draftOptions ?? [],
     nextInstanceId: saved.nextInstanceId ?? cardCount + 1,
     educationPlayedThisTurn: saved.educationPlayedThisTurn ?? false,
+    desperationApBonusNextTurn: saved.desperationApBonusNextTurn ?? 0,
+    cascadingCooldownTurns: saved.cascadingCooldownTurns ?? 0,
+    crisisAppearanceCount: saved.crisisAppearanceCount ?? {},
+    advisorAbilityUsed: saved.advisorAbilityUsed ?? {},
+    midGameBonuses: saved.midGameBonuses ?? {},
+    maxPolicyPoints: saved.maxPolicyPoints ?? 10,
   };
 }
 

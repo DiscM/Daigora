@@ -1,4 +1,5 @@
-import { cardById, crises, crisisById, starterDeckIds } from './content';
+import { cardById, crises, crisisById, starterDeckIds, projectAids } from './content';
+import type { CrisisChoice } from './types';
 import { INDEX_KEYS } from './types';
 import type { CardDefinition, CardInstance, Effect, GameLogEntry, GameState, IndexKey, StatusKind } from './types';
 
@@ -180,7 +181,7 @@ function applyEffect(state: GameState, effect: Effect): void {
       state.actionPoints = Math.max(0, state.actionPoints + effect.amount);
       break;
     case 'policy':
-      state.policyPoints = Math.max(0, state.policyPoints + effect.amount);
+      state.policyPoints = Math.max(0, Math.min(state.maxPolicyPoints, state.policyPoints + effect.amount));
       break;
     case 'draw':
       drawCards(state, effect.amount);
@@ -237,11 +238,13 @@ function checkLoss(state: GameState): void {
 }
 
 function resolveCascadingIfNeeded(state: GameState, deferDamage = false): void {
+  if (state.cascadingCooldownTurns > 0) return;
   const critical = INDEX_KEYS.filter((key) => state.indexes[key] <= 2).length;
   if (critical >= 2) {
     if (deferDamage) state.pendingCrisisDamage += 2;
     else applyHealth(state, -2);
     addStatusToDiscard(state, 'Apathy');
+    state.cascadingCooldownTurns = 2;
     state.log = addLog(state, 'Cascading Disaster triggered: -2 Health and +1 Apathy.');
   }
 }
@@ -252,7 +255,7 @@ function applyAidSetup(state: GameState): void {
   }
 }
 
-export function createGame(seed = 'earth-month', selectedAidIds = ['educator', 'disaster-responder'], gameMode: 'campaign' | 'workshop' = 'campaign'): GameState {
+export function createGame(seed = 'earth-month', selectedAidIds = ['educator', 'disaster-responder'], gameMode: 'campaign' | 'workshop' = 'campaign', difficulty: 'normal' | 'hard' | 'apocalypse' = 'normal'): GameState {
   let rngState = hashSeed(seed);
   const [deck, deckState] = shuffleWithState(makeInstances(starterDeckIds, 'starter'), rngState);
   rngState = deckState;
@@ -262,19 +265,22 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     .slice(0, turnLimit);
   const [crisisDeck, crisisState] = shuffleWithState(crisisIds, rngState);
   rngState = crisisState;
+  const startIndex = difficulty === 'apocalypse' ? 1 : difficulty === 'hard' ? 2 : 3;
   const state: GameState = {
     seed,
     rngState,
     phase: 'setup',
     gameMode,
+    difficulty,
     turnLimit,
     draftOptions: [],
     turn: 0,
-    planetHealth: gameMode === 'campaign' ? 24 : 20,
-    maxPlanetHealth: gameMode === 'campaign' ? 24 : 20,
+    planetHealth: (gameMode === 'campaign' ? 24 : 20) - (difficulty === 'hard' ? 2 : difficulty === 'apocalypse' ? 4 : 0),
+    maxPlanetHealth: (gameMode === 'campaign' ? 24 : 20) - (difficulty === 'hard' ? 2 : difficulty === 'apocalypse' ? 4 : 0),
     actionPoints: 0,
     policyPoints: 0,
-    indexes: { trust: 3, ecology: 3, economy: 3, coordination: 3 },
+    maxPolicyPoints: 10,
+    indexes: { trust: startIndex, ecology: startIndex, economy: startIndex, coordination: startIndex },
     selectedAidIds,
     crisisDeck,
     crisisDiscard: [],
@@ -297,6 +303,11 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     educationBonusUsedThisTurn: false,
     ecologyBonusUsedThisTurn: false,
     untreatedDeforestation: false,
+    desperationApBonusNextTurn: 0,
+    midGameBonuses: {},
+    cascadingCooldownTurns: 0,
+    crisisAppearanceCount: {},
+    advisorAbilityUsed: {},
     log: [],
   };
   applyAidSetup(state);
@@ -309,7 +320,9 @@ export function startTurn(input: GameState): GameState {
   if (state.turn >= state.turnLimit) return resolveFinalCrisis(state);
   state.phase = 'play';
   state.turn += 1;
-  state.actionPoints = state.turn >= 6 ? 4 : 3;
+  state.cascadingCooldownTurns = Math.max(0, state.cascadingCooldownTurns - 1);
+  state.actionPoints = (state.turn >= 6 ? 4 : 3) + state.desperationApBonusNextTurn;
+  state.desperationApBonusNextTurn = 0;
   state.incomingDamagePrevention = 0;
   state.pendingCrisisDamage = 0;
   state.crisisAvertedThisTurn = false;
@@ -331,6 +344,11 @@ export function startTurn(input: GameState): GameState {
   const crisisId = state.crisisDeck.shift();
   if (crisisId) {
     state.currentCrisisId = crisisId;
+    const crisis = crisisById[crisisId];
+    if (crisis.choice) {
+      state.pendingCrisisChoice = crisis.choice;
+      state.log = addLog(state, `Crisis revealed: ${crisis.name}. ${crisis.choice.text}`);
+    }
     resolveCrisis(state, crisisId);
   }
 
@@ -344,6 +362,8 @@ export function startTurn(input: GameState): GameState {
 
 function resolveCrisis(state: GameState, crisisId: string): void {
   const crisis = crisisById[crisisId];
+  state.crisisAppearanceCount[crisisId] = (state.crisisAppearanceCount[crisisId] ?? 0) + 1;
+  const appearanceCount = state.crisisAppearanceCount[crisisId];
   state.log = addLog(state, `Crisis revealed: ${crisis.name}.`);
   crisis.addStatuses?.forEach((status) => addStatusToDiscard(state, status));
   state.nextTurnDrawPenalty += crisis.drawPenaltyNextTurn ?? 0;
@@ -363,7 +383,33 @@ function resolveCrisis(state: GameState, crisisId: string): void {
     crisis.calamity.addStatuses?.forEach((status) => addStatusToDiscard(state, status));
     state.log = addLog(state, crisis.calamity.text);
   }
+  if (appearanceCount > 1) {
+    state.pendingCrisisDamage += 1;
+    state.log = addLog(state, `${crisis.name} escalates (${appearanceCount}x): +1 extra damage.`);
+  }
   resolveCascadingIfNeeded(state, true);
+}
+
+export function resolveCrisisChoice(input: GameState, optionIndex: number): GameState {
+  const state = cloneState(input);
+  if (!state.pendingCrisisChoice) return state;
+  const option: CrisisChoice = state.pendingCrisisChoice.options[optionIndex];
+  if (!option) return state;
+  state.log = addLog(state, `Chose: ${option.text}`);
+  option.effects.forEach((effect) => applyEffect(state, effect));
+  option.addStatuses?.forEach((status) => addStatusToDiscard(state, status));
+  if (option.drawPenaltyNextTurn) state.nextTurnDrawPenalty += option.drawPenaltyNextTurn;
+  option.costPenalties?.forEach((penalty) => {
+    if (penalty.timing === 'thisTurn' || penalty.timing === 'both') {
+      state.thisTurnCostPenalty[penalty.cardType] = (state.thisTurnCostPenalty[penalty.cardType] ?? 0) + penalty.amount;
+    }
+    if (penalty.timing === 'nextTurn' || penalty.timing === 'both') {
+      state.nextTurnCostPenalty[penalty.cardType] = (state.nextTurnCostPenalty[penalty.cardType] ?? 0) + penalty.amount;
+    }
+  });
+  state.pendingCrisisChoice = undefined;
+  updateCrisisAverted(state);
+  return state;
 }
 
 function hasStatusInActivePiles(state: GameState, status: StatusKind): boolean {
@@ -396,6 +442,7 @@ export function getCardCost(state: GameState, card: CardDefinition): { ap: numbe
 
 export function canPlayCard(state: GameState, instanceId: string): { ok: boolean; reason?: string } {
   if (state.phase !== 'play') return { ok: false, reason: 'Game is not in the play phase.' };
+  if (state.pendingCrisisChoice) return { ok: false, reason: 'Resolve the crisis choice first.' };
   const instance = state.hand.find((card) => card.instanceId === instanceId);
   if (!instance) return { ok: false, reason: 'Card is not in hand.' };
   const card = findDefinition(instance);
@@ -438,7 +485,9 @@ export function playCard(input: GameState, instanceId: string): GameState {
     mutateIndex(state, 'trust', 1);
     state.educationBonusUsedThisTurn = true;
   }
-  if (card.type === 'Policy' && state.selectedAidIds.includes('policy-advocate')) state.policyPoints += 1;
+  if (card.type === 'Policy' && state.selectedAidIds.includes('policy-advocate')) {
+    state.policyPoints = Math.min(state.maxPolicyPoints, state.policyPoints + 1);
+  }
   updateCrisisAverted(state);
 
   if (card.keywords?.includes('Exhaust') || card.keywords?.includes('Ongoing')) state.exhausted.push(instance);
@@ -483,11 +532,25 @@ export function endTurn(input: GameState): GameState {
     state.nextTurnCostPenalty.Policy = (state.nextTurnCostPenalty.Policy ?? 0) + 1;
     state.log = addLog(state, 'Economic Pushback triggered.');
   }
+  if (state.indexes.ecology <= 3) {
+    addStatusToDiscard(state, 'Pollution');
+    state.log = addLog(state, 'Environmental Degradation adds 1 Pollution.');
+  }
   if (state.indexes.coordination <= 3) {
     state.policyLockedNextTurn = true;
     state.log = addLog(state, 'Policy Paralysis triggered.');
   }
+  if (INDEX_KEYS.every((key) => state.indexes[key] <= 3)) {
+    state.desperationApBonusNextTurn = 1;
+    state.log = addLog(state, 'Desperation: all readiness low grants +1 AP next turn.');
+  }
   resolveCascadingIfNeeded(state, state.crisisAvertedThisTurn);
+  if (state.turn === 8 && !state.midGameBonuses.allIndexesFiveByTurnEight && INDEX_KEYS.every((key) => state.indexes[key] >= 5)) {
+    state.midGameBonuses.allIndexesFiveByTurnEight = true;
+    state.maxPlanetHealth += 2;
+    state.planetHealth = Math.min(state.planetHealth + 2, state.maxPlanetHealth);
+    state.log = addLog(state, 'Milestone: all readiness >= 5 by turn 8! +2 max Health.');
+  }
   state.crisisDiscard.push(...(state.currentCrisisId ? [state.currentCrisisId] : []));
   state.currentCrisisId = undefined;
   const retained = state.hand.filter(isRetained);
@@ -612,4 +675,75 @@ export function skipDraftOrUpgrade(input: GameState): GameState {
   if (state.phase !== 'draftOrUpgrade') return state;
   state.draftOptions = [];
   return startTurn(state);
+}
+
+export function getRetireableCards(state: GameState): CardDefinition[] {
+  const seen = new Set<string>();
+  const result: CardDefinition[] = [];
+  for (const pile of [state.hand, state.deck, state.discard]) {
+    for (const instance of pile) {
+      const def = findDefinition(instance);
+      if (def.type === 'Status' || seen.has(def.id)) continue;
+      seen.add(def.id);
+      result.push(def);
+    }
+  }
+  return result;
+}
+
+export function retireCard(input: GameState, defId: string): GameState {
+  const state = cloneState(input);
+  if (state.phase !== 'draftOrUpgrade') return state;
+  let removed = false;
+  for (const pileName of ['hand', 'deck', 'discard'] as const) {
+    const pile = state[pileName];
+    for (let i = pile.length - 1; i >= 0; i -= 1) {
+      if (pile[i].defId === defId) {
+        state.exhausted.push(...pile.splice(i, 1));
+        removed = true;
+        break;
+      }
+    }
+    if (removed) break;
+  }
+  if (removed) {
+    state.log = addLog(state, `Retired ${cardById[defId].name} from the deck permanently.`);
+  }
+  state.draftOptions = [];
+  return startTurn(state);
+}
+
+export function useAdvisorAbility(input: GameState, aidId: string): GameState {
+  const state = cloneState(input);
+  if (state.phase === 'gameOver') return state;
+  if (state.advisorAbilityUsed[aidId]) return state;
+  const aid = projectAids.find((a) => a.id === aidId);
+  if (!aid?.ability) return state;
+
+  state.advisorAbilityUsed[aidId] = true;
+  switch (aidId) {
+    case 'educator':
+      mutateIndex(state, 'trust', 2);
+      drawCards(state, 2);
+      state.log = addLog(state, `Educator ability: +2 Trust, draw 2.`);
+      break;
+    case 'ecologist':
+      mutateIndex(state, 'ecology', 3);
+      applyHealth(state, 3);
+      state.log = addLog(state, `Ecologist ability: +3 Ecology, +3 Health.`);
+      break;
+    case 'engineer':
+      state.thisTurnCostPenalty.Technology = (state.thisTurnCostPenalty.Technology ?? 0) - 999;
+      state.log = addLog(state, `Engineer ability: next Technology costs 0 AP.`);
+      break;
+    case 'policy-advocate':
+      state.policyPoints = Math.min(state.maxPolicyPoints, state.policyPoints + 3);
+      state.log = addLog(state, `Policy Advocate ability: +3 PP.`);
+      break;
+    case 'disaster-responder':
+      state.incomingDamagePrevention += 4;
+      state.log = addLog(state, `Disaster Responder ability: +4 damage prevention.`);
+      break;
+  }
+  return state;
 }

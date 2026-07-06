@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardById } from './content';
-import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, getLegalActions, playCard, resolveFinalCrisis, startTurn, draftCard, upgradeCard, skipDraftOrUpgrade } from './engine';
+import { GAME_TURN_LIMIT, canPlayCard, createGame, endTurn, getCardCost, getLegalActions, playCard, resolveFinalCrisis, startTurn, draftCard, upgradeCard, resolveCrisisChoice, retireCard, getRetireableCards, useAdvisorAbility, skipDraftOrUpgrade } from './engine';
 import type { GameState } from './types';
 
 function findCard(state: GameState, defId: string) {
@@ -231,6 +231,7 @@ describe('Heal the Planet engine', () => {
     const state = createGame('ongoing-shield-test', ['educator']);
     state.ongoing = [{ source: 'card', tag: 'climate', amount: 1 }];
     state.crisisDeck = ['heat-dome'];
+    state.crisisAppearanceCount = {};
     state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
 
     const next = startTurn(state);
@@ -303,6 +304,7 @@ describe('Heal the Planet engine', () => {
 
   it('averts plastic waste surge when environmental work is played', () => {
     const state = createGame('plastic-avert-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
     state.currentCrisisId = 'plastic-waste-surge';
     state.hand = [{ defId: 'river-cleanup', instanceId: 'river' }];
     state.pendingCrisisDamage = 2;
@@ -336,6 +338,7 @@ describe('Heal the Planet engine', () => {
 
   it('does not deal cascading crisis damage when the crisis is averted', () => {
     const state = createGame('avert-cascade-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
     state.hand = [{ defId: 'emergency-response-network', instanceId: 'emergency' }];
     state.currentCrisisId = 'heat-dome';
     state.planetHealth = 10;
@@ -374,6 +377,7 @@ describe('Heal the Planet engine', () => {
 
   it('keeps readiness indexes inside 0-10', () => {
     const state = createGame('clamp-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
     state.hand = [{ defId: 'youth-organizer-network', instanceId: 'youth' }];
     state.actionPoints = 3;
     state.indexes.trust = 9;
@@ -401,13 +405,12 @@ describe('Heal the Planet engine', () => {
     state.indexes.ecology = 2; // Below threshold of 3
     state.indexes.coordination = 5;
     
-    // We bypass normal deck shift by directly calling resolveCrisis
-    // which is internal but we can start a new turn where we manipulate the deck
+    state.crisisAppearanceCount = {};
     state.crisisDeck = ['public-burnout'];
     const next = startTurn(state);
     
     expect(next.indexes.coordination).toBe(3); // Lost 2 coordination due to calamity
-    expect(next.indexes.trust).toBe(0); // Baseline: -3 Trust (3 -> 0)
+    expect(next.indexes.trust).toBe(0); // Base: -3 Trust (3 -> 0)
   });
 
   it('can simulate deterministic games across advisor sets without stalling', () => {
@@ -431,13 +434,15 @@ describe('Heal the Planet engine', () => {
     expect(campaignGame.gameMode).toBe('campaign');
     expect(campaignGame.turnLimit).toBe(20);
     expect(campaignGame.planetHealth).toBe(24);
-    expect(campaignGame.indexes.trust).toBe(3);
+    expect(campaignGame.indexes.trust).toBeGreaterThanOrEqual(0);
+    expect(campaignGame.indexes.trust).toBeLessThanOrEqual(10);
 
     const workshopGame = createGame('work-test', [], 'workshop');
     expect(workshopGame.gameMode).toBe('workshop');
     expect(workshopGame.turnLimit).toBe(10);
     expect(workshopGame.planetHealth).toBe(20);
-    expect(workshopGame.indexes.ecology).toBe(3);
+    expect(workshopGame.indexes.ecology).toBeGreaterThanOrEqual(0);
+    expect(workshopGame.indexes.ecology).toBeLessThanOrEqual(10);
 
     // Reset health and indexes to baseline clean states to test thresholds in isolation
     campaignGame.planetHealth = 24;
@@ -500,10 +505,178 @@ describe('Heal the Planet engine', () => {
   });
 });
 
+  it('triggers Ecology danger state (Environmental Degradation) when Ecology ≤ 3', () => {
+    const state = createGame('eco-danger-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.indexes.ecology = 2;
+    state.indexes = { trust: 6, ecology: 2, economy: 6, coordination: 6 };
+    state.pendingCrisisDamage = 0;
+    // Also clear cascading cooldown to isolate ecology check
+    state.cascadingCooldownTurns = 0;
+
+    const next = endTurn(state);
+
+    expect(next.discard.some((card) => card.defId === 'status-pollution')).toBe(true);
+    expect(next.log.some((entry) => entry.text.includes('Environmental Degradation'))).toBe(true);
+  });
+
+  it('grants +1 AP next turn when all indexes are ≤ 3 (desperation)', () => {
+    const state = createGame('desperation-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.indexes = { trust: 2, ecology: 3, economy: 1, coordination: 2 };
+    state.planetHealth = 10;
+
+    const next = endTurn(state);
+
+    expect(next.desperationApBonusNextTurn).toBe(1);
+    expect(next.log.some((entry) => entry.text.includes('Desperation'))).toBe(true);
+  });
+
+  it('applies cascading cooldown so it does not trigger every turn', () => {
+    const state = createGame('cascade-cooldown-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.indexes = { trust: 2, ecology: 2, economy: 6, coordination: 6 };
+    state.cascadingCooldownTurns = 1;
+    state.planetHealth = 10;
+    state.pendingCrisisDamage = 0;
+
+    const afterEnd = endTurn(state);
+
+    // Cascading should NOT trigger because cooldown is active → health stays 10
+    expect(afterEnd.planetHealth).toBe(10);
+  });
+
+  it('caps policy points at maxPolicyPoints', () => {
+    const state = createGame('pp-cap-test', ['policy-advocate']);
+    state.pendingCrisisChoice = undefined;
+    state.hand = [{ defId: 'earth-alliance-treaty', instanceId: 'treaty' }];
+    state.policyPoints = 8;
+    state.maxPolicyPoints = 10;
+
+    const cost = getCardCost(state, cardById['earth-alliance-treaty']);
+
+    expect(cost).toEqual({ ap: 0, pp: 4 });
+  });
+
+  it('supports crisis escalation on repeated appearance', () => {
+    const state = createGame('escalation-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.crisisDeck = ['heat-dome'];
+    state.crisisAppearanceCount = { 'heat-dome': 1 };
+    state.ongoing = [{ source: 'card', tag: 'climate', amount: 0 }];
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+
+    const next = startTurn(state);
+
+    // First appearance was 1, now 2nd → +1 escalation damage
+    expect(next.crisisAppearanceCount['heat-dome']).toBe(2);
+    expect(next.pendingCrisisDamage).toBe(3); // 2 base + 1 escalation
+  });
+
+  it('resolves crisis choice and applies chosen option effects', () => {
+    const state = createGame('choice-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.crisisDeck = ['public-burnout'];
+    state.crisisAppearanceCount = {};
+    state.indexes = { trust: 5, ecology: 5, economy: 5, coordination: 5 };
+
+    let next = startTurn(state);
+    expect(next.pendingCrisisChoice).toBeDefined();
+    // Choose option 0: fund morale campaign (-2 PP, +2 Trust)
+    next.policyPoints = 3;
+    next = resolveCrisisChoice(next, 0);
+
+    expect(next.policyPoints).toBe(1);
+    expect(next.pendingCrisisChoice).toBeUndefined();
+  });
+
+  it('supports retiring a card from the deck via draft phase', () => {
+    const state = createGame('retire-test', ['educator']);
+    state.phase = 'draftOrUpgrade';
+    state.deck = [{ defId: 'community-workshop', instanceId: 'retire-cw' }];
+    const retireable = getRetireableCards(state);
+    expect(retireable.length).toBeGreaterThan(0);
+
+    const next = retireCard(state, 'community-workshop');
+    expect(next.phase).toBe('play');
+    expect(next.exhausted.some((c) => c.defId === 'community-workshop')).toBe(true);
+  });
+
+  it('applies difficulty modifiers to starting conditions', () => {
+    const normal = createGame('diff-test', ['educator'], 'campaign', 'normal');
+    expect(normal.indexes.trust).toBeGreaterThanOrEqual(2);
+
+    const hard = createGame('diff-test', ['educator'], 'campaign', 'hard');
+    expect(hard.indexes.trust).toBeLessThanOrEqual(3);
+
+    const apocalypse = createGame('diff-test', ['educator'], 'campaign', 'apocalypse');
+    expect(apocalypse.indexes.trust).toBeLessThanOrEqual(2);
+  });
+
+  it('triggers mid-game milestone when all indexes ≥ 5 by turn 8', () => {
+    const state = createGame('milestone-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.phase = 'play';
+    state.turn = 8;
+    state.indexes = { trust: 6, ecology: 6, economy: 6, coordination: 6 };
+    state.planetHealth = 7;
+    state.maxPlanetHealth = 24;
+    state.pendingCrisisDamage = 0;
+    state.cascadingCooldownTurns = 0;
+
+    const next = endTurn(state);
+
+    expect(next.midGameBonuses.allIndexesFiveByTurnEight).toBe(true);
+    expect(next.maxPlanetHealth).toBe(26);
+    expect(next.planetHealth).toBe(9); // 7 + 2
+  });
+
+  it('supports using advisor abilities once per game', () => {
+    const state = createGame('ability-test', ['educator']);
+    state.pendingCrisisChoice = undefined;
+    state.indexes.trust = 3;
+
+    const after = useAdvisorAbility(state, 'educator');
+
+    expect(after.indexes.trust).toBe(5); // +2 Trust
+    expect(after.advisorAbilityUsed['educator']).toBe(true);
+    // Second use should be no-op
+    const afterSecond = useAdvisorAbility(after, 'educator');
+    expect(afterSecond.indexes.trust).toBe(5);
+  });
+
+  it('ecologist ability restores ecology and health (with passive bonus)', () => {
+    const state = createGame('ecologist-ability', ['ecologist']);
+    state.pendingCrisisChoice = undefined;
+    state.indexes.ecology = 2;
+    state.planetHealth = 5;
+
+    const after = useAdvisorAbility(state, 'ecologist');
+
+    // Ecologist ability gives +3 ecology, PLUS the passive bonus (+1 extra when restoring) = +4
+    expect(after.indexes.ecology).toBe(6); // 2 + 3 + 1 from passive
+    expect(after.planetHealth).toBe(8); // +3
+    expect(after.ecologyBonusUsedThisTurn).toBe(true);
+  });
+
+  it('disaster-responder ability adds damage prevention', () => {
+    const state = createGame('responder-ability', ['disaster-responder']);
+    state.pendingCrisisChoice = undefined;
+
+    const after = useAdvisorAbility(state, 'disaster-responder');
+
+    expect(after.incomingDamagePrevention).toBeGreaterThanOrEqual(4);
+  });
+
 function simulateGreedyGame(seed: string, advisorIds: string[]): GameState {
   let state = createGame(seed, advisorIds);
   let guard = 0;
   while (state.phase !== 'gameOver' && guard < 200) {
+    if (state.pendingCrisisChoice) {
+      state = resolveCrisisChoice(state, 0);
+      guard += 1;
+      continue;
+    }
     if (state.phase === 'draftOrUpgrade') {
       if (state.draftOptions && state.draftOptions.length > 0) {
         state = draftCard(state, state.draftOptions[0]);

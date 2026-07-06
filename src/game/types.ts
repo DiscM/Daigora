@@ -1,5 +1,5 @@
 export type IndexKey = 'trust' | 'ecology' | 'economy' | 'coordination';
-export type Phase = 'setup' | 'play' | 'draftOrUpgrade' | 'final' | 'gameOver';
+export type Phase = 'setup' | 'crisisChoice' | 'play' | 'draftOrUpgrade' | 'final' | 'gameOver';
 export const INDEX_KEYS: IndexKey[] = ['trust', 'ecology', 'economy', 'coordination'];
 export type CardType = 'Education' | 'Environmental Work' | 'Technology' | 'Policy' | 'Emergency' | 'Status';
 export type StatusKind = 'Pollution' | 'Apathy' | 'Misinformation' | 'Delay' | 'Backlash';
@@ -30,6 +30,14 @@ export interface CardDefinition {
   upgradesTo?: string;
 }
 
+export interface CrisisChoice {
+  text: string;
+  effects: Effect[];
+  addStatuses?: StatusKind[];
+  drawPenaltyNextTurn?: number;
+  costPenalties?: Array<{ cardType: CardType; amount: number; timing: 'thisTurn' | 'nextTurn' | 'both' }>;
+}
+
 export interface CrisisDefinition {
   id: string;
   name: string;
@@ -43,6 +51,10 @@ export interface CrisisDefinition {
   untreatedDamage?: number;
   avertWhenStatusCleansed?: StatusKind;
   effects: Effect[];
+  choice?: {
+    text: string;
+    options: [CrisisChoice, CrisisChoice];
+  };
   calamity?: {
     index: IndexKey;
     threshold: number;
@@ -58,6 +70,7 @@ export interface ProjectAidDefinition {
   role: string;
   passive: string;
   drawback: string;
+  ability?: string;
 }
 
 export interface CardInstance {
@@ -81,6 +94,7 @@ export interface GameState {
   rngState: number;
   phase: Phase;
   gameMode: 'campaign' | 'workshop';
+  difficulty: 'normal' | 'hard' | 'apocalypse';
   turnLimit: number;
   draftOptions: string[];
   turn: number;
@@ -88,11 +102,14 @@ export interface GameState {
   maxPlanetHealth: number;
   actionPoints: number;
   policyPoints: number;
+  maxPolicyPoints: number;
   indexes: Record<IndexKey, number>;
   selectedAidIds: string[];
   crisisDeck: string[];
   crisisDiscard: string[];
   currentCrisisId?: string;
+  pendingCrisisChoice?: { text: string; options: [CrisisChoice, CrisisChoice] };
+  midGameBonuses: { allIndexesFiveByTurnEight?: boolean };
   nextInstanceId: number;
   deck: CardInstance[];
   hand: CardInstance[];
@@ -112,6 +129,10 @@ export interface GameState {
   educationBonusUsedThisTurn: boolean;
   ecologyBonusUsedThisTurn: boolean;
   untreatedDeforestation: boolean;
+  desperationApBonusNextTurn: number;
+  cascadingCooldownTurns: number;
+  crisisAppearanceCount: Record<string, number>;
+  advisorAbilityUsed: Record<string, boolean>;
   finalRating?: string;
   finalSummary?: string;
   log: GameLogEntry[];
