@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { projectAids, cardById } from './game/content';
 import { createGame, endTurn, playCard, draftCard, upgradeCard, retireCard, getRetireableCards, resolveCrisisChoice, useAdvisorAbility, skipDraftOrUpgrade } from './game/engine';
@@ -13,6 +14,37 @@ import { CrisisPanel } from './components/CrisisPanel';
 const SAVE_KEY = 'heal-the-planet-save-v1';
 const DEFAULT_AIDS = ['educator', 'disaster-responder'];
 type FeedbackKind = 'card' | 'damage' | 'debuff' | 'avert' | 'gain';
+
+function useViewportScale(ref: React.RefObject<HTMLElement | null>, reFitDeps: React.DependencyList = []) {
+  const refitRef = useRef<(() => void) | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const refit = () => {
+      const w = el.scrollWidth;
+      const h = el.scrollHeight;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (!w || !h || !vw || !vh) return;
+      const scale = Math.min(vw / w, vh / h);
+      el.style.transform = `scale(${scale})`;
+    };
+    refitRef.current = refit;
+    refit();
+    window.addEventListener('resize', refit);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(refit) : null;
+    if (ro) ro.observe(el);
+    return () => {
+      window.removeEventListener('resize', refit);
+      ro?.disconnect();
+    };
+  }, [ref]);
+
+  useLayoutEffect(() => {
+    refitRef.current?.();
+  }, reFitDeps);
+}
 
 interface FeedbackEvent {
   id: number;
@@ -52,6 +84,9 @@ export function App() {
   const [flashTick, setFlashTick] = useState(0);
   const previousGame = useRef<GameState | null>(game);
   const feedbackId = useRef(0);
+  const scalerRef = useRef<HTMLDivElement>(null);
+
+  useViewportScale(scalerRef, [game?.phase, game?.hand.length, game]);
 
   useEffect(() => {
     if (game) localStorage.setItem(SAVE_KEY, JSON.stringify(game));
@@ -128,7 +163,7 @@ export function App() {
   }, []);
 
   if (!game) {
-    return (
+    const startMenu = (
       <main className="start-shell">
         <section className="start-planet" aria-label="Planet briefing">
           <div className="orbit-field" aria-hidden="true">
@@ -204,9 +239,14 @@ export function App() {
         </section>
       </main>
     );
+    return (
+      <div className="viewport">
+        <div className="scaler" ref={scalerRef}>{startMenu}</div>
+      </div>
+    );
   }
 
-  return (
+  const gameShell = (
     <main className={`app-shell ${game.phase === 'gameOver' ? 'is-game-over' : ''}`}>
       <section className={`planet-stage ${flashes.health === 'loss' ? 'has-damage-flash' : ''}`} aria-label="Planet board">
         <div className="planet-damage-flash" aria-hidden="true" />
@@ -359,136 +399,146 @@ export function App() {
           </div>
         </div>
       </section>
+    </main>
+  );
 
-      {game.pendingCrisisChoice && (
-        <div className="crisis-choice-overlay">
-          <div className="draft-upgrade-container">
-            <div className="draft-upgrade-header">
-              <h2>Crisis Response Required</h2>
-              <p>{game.pendingCrisisChoice.text}</p>
+  const crisisChoiceOverlay = game.pendingCrisisChoice && (
+    <div className="crisis-choice-overlay">
+      <div className="draft-upgrade-container">
+        <div className="draft-upgrade-header">
+          <h2>Crisis Response Required</h2>
+          <p>{game.pendingCrisisChoice.text}</p>
+        </div>
+        <div className="crisis-choice-grid">
+          {game.pendingCrisisChoice.options.map((option, index) => (
+            <div key={index} className="crisis-choice-card">
+              <p className="choice-text">{option.text}</p>
+              <button
+                className="filled-button crisis-choice-btn"
+                onClick={() => setGame((state) => state ? resolveCrisisChoice(state, index) : null)}
+                type="button"
+              >
+                Choose This Response
+              </button>
             </div>
-            <div className="crisis-choice-grid">
-              {game.pendingCrisisChoice.options.map((option, index) => (
-                <div key={index} className="crisis-choice-card">
-                  <p className="choice-text">{option.text}</p>
-                  <button
-                    className="filled-button crisis-choice-btn"
-                    onClick={() => setGame((state) => state ? resolveCrisisChoice(state, index) : null)}
-                    type="button"
-                  >
-                    Choose This Response
-                  </button>
-                </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const draftUpgradeOverlay = game.phase === 'draftOrUpgrade' && (
+    <div className="draft-upgrade-overlay">
+      <div className="draft-upgrade-container">
+        <div className="draft-upgrade-header">
+          <h2>Deck Improvement Phase</h2>
+          <p>Choose <strong>one</strong> card to draft or upgrade to prepare for upcoming crises.</p>
+        </div>
+        <div className="draft-upgrade-split">
+          <div className="draft-section">
+            <h3>Option A: Draft a New Card</h3>
+            <p className="section-subtitle">Add one of these 3 random actions to your discard pile</p>
+            <div className="draft-card-options">
+              {game.draftOptions.map((defId) => (
+                <StaticCard
+                  key={defId}
+                  defId={defId}
+                  onClick={() => setGame((state) => state ? draftCard(state, defId) : null)}
+                />
               ))}
             </div>
           </div>
-        </div>
-      )}
-      {game.phase === 'draftOrUpgrade' && (
-        <div className="draft-upgrade-overlay">
-          <div className="draft-upgrade-container">
-            <div className="draft-upgrade-header">
-              <h2>Deck Improvement Phase</h2>
-              <p>Choose <strong>one</strong> card to draft or upgrade to prepare for upcoming crises.</p>
-            </div>
-            
-            <div className="draft-upgrade-split">
-              <div className="draft-section">
-                <h3>Option A: Draft a New Card</h3>
-                <p className="section-subtitle">Add one of these 3 random actions to your discard pile</p>
-                <div className="draft-card-options">
-                  {game.draftOptions.map((defId) => (
-                    <StaticCard
-                      key={defId}
-                      defId={defId}
-                      onClick={() => setGame((state) => state ? draftCard(state, defId) : null)}
-                    />
-                  ))}
-                </div>
-              </div>
 
-              <div className="vertical-divider" aria-hidden="true">
-                <span className="divider-line" />
-                <span className="divider-orb">OR</span>
-                <span className="divider-line" />
-              </div>
+          <div className="vertical-divider" aria-hidden="true">
+            <span className="divider-line" />
+            <span className="divider-orb">OR</span>
+            <span className="divider-line" />
+          </div>
 
-              <div className="upgrade-section">
-                <h3>Option B: Upgrade an Existing Card</h3>
-                <p className="section-subtitle">Choose one card currently in your deck to upgrade permanently</p>
-                {upgradableCards.length === 0 ? (
-                  <div className="no-upgrades-container">
-                    <p className="no-upgrades-msg">No upgradable cards in your current deck.</p>
-                  </div>
-                ) : (
-                  <div className="upgrade-comparison-list">
-                    {upgradableCards.map((card) => (
-                      <div key={card.id} className="upgrade-comparison-row">
-                        <div className="upgrade-cards-side-by-side">
-                          <div className="comparison-card-wrapper base-card">
-                            <span className="card-state-label">Current</span>
-                            <StaticCard defId={card.id} />
-                          </div>
-                          <div className="upgrade-arrow-indicator" aria-hidden="true">➔</div>
-                          <div className="comparison-card-wrapper upgraded-card">
-                            <span className="card-state-label">Upgraded</span>
-                            <StaticCard defId={card.upgradesTo!} />
-                          </div>
-                        </div>
-                        <button
-                          className="filled-button upgrade-action-btn"
-                          onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
-                          type="button"
-                        >
-                          Upgrade {card.name}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+          <div className="upgrade-section">
+            <h3>Option B: Upgrade an Existing Card</h3>
+            <p className="section-subtitle">Choose one card currently in your deck to upgrade permanently</p>
+            {upgradableCards.length === 0 ? (
+              <div className="no-upgrades-container">
+                <p className="no-upgrades-msg">No upgradable cards in your current deck.</p>
               </div>
-            </div>
-
-            <div className="retire-section">
-              <h3>Option C: Retire a Card</h3>
-              <p className="section-subtitle">Permanently remove a card from your deck to improve consistency</p>
-              {(() => {
-                const retireable = getRetireableCards(game);
-                if (retireable.length === 0) {
-                  return <div className="no-upgrades-container"><p className="no-upgrades-msg">No cards to retire.</p></div>;
-                }
-                return (
-                  <div className="retire-card-list">
-                    {retireable.map((card) => (
-                      <div key={card.id} className="retire-card-item">
+            ) : (
+              <div className="upgrade-comparison-list">
+                {upgradableCards.map((card) => (
+                  <div key={card.id} className="upgrade-comparison-row">
+                    <div className="upgrade-cards-side-by-side">
+                      <div className="comparison-card-wrapper base-card">
+                        <span className="card-state-label">Current</span>
                         <StaticCard defId={card.id} />
-                        <button
-                          className="tonal-button retire-action-btn"
-                          onClick={() => setGame((state) => state ? retireCard(state, card.id) : null)}
-                          type="button"
-                        >
-                          Retire {card.name}
-                        </button>
                       </div>
-                    ))}
+                      <div className="upgrade-arrow-indicator" aria-hidden="true">➔</div>
+                      <div className="comparison-card-wrapper upgraded-card">
+                        <span className="card-state-label">Upgraded</span>
+                        <StaticCard defId={card.upgradesTo!} />
+                      </div>
+                    </div>
+                    <button
+                      className="filled-button upgrade-action-btn"
+                      onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
+                      type="button"
+                    >
+                      Upgrade {card.name}
+                    </button>
                   </div>
-                );
-              })()}
-            </div>
-
-            <div className="draft-upgrade-footer">
-              <button
-                className="tonal-button skip-phase-btn"
-                onClick={() => setGame((state) => state ? skipDraftOrUpgrade(state) : null)}
-                type="button"
-              >
-                Skip Deck Improvement (Keep Deck Unchanged)
-              </button>
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </main>
+
+        <div className="retire-section">
+          <h3>Option C: Retire a Card</h3>
+          <p className="section-subtitle">Permanently remove a card from your deck to improve consistency</p>
+          {(() => {
+            const retireable = getRetireableCards(game);
+            if (retireable.length === 0) {
+              return <div className="no-upgrades-container"><p className="no-upgrades-msg">No cards to retire.</p></div>;
+            }
+            return (
+              <div className="retire-card-list">
+                {retireable.map((card) => (
+                  <div key={card.id} className="retire-card-item">
+                    <StaticCard defId={card.id} />
+                    <button
+                      className="tonal-button retire-action-btn"
+                      onClick={() => setGame((state) => state ? retireCard(state, card.id) : null)}
+                      type="button"
+                    >
+                      Retire {card.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
+        <div className="draft-upgrade-footer">
+          <button
+            className="tonal-button skip-phase-btn"
+            onClick={() => setGame((state) => state ? skipDraftOrUpgrade(state) : null)}
+            type="button"
+          >
+            Skip Deck Improvement (Keep Deck Unchanged)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="viewport">
+        <div className="scaler" ref={scalerRef}>{gameShell}</div>
+      </div>
+      {crisisChoiceOverlay && createPortal(crisisChoiceOverlay, document.body)}
+      {draftUpgradeOverlay && createPortal(draftUpgradeOverlay, document.body)}
+    </>
   );
 }
 
