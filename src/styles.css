@@ -3260,10 +3260,16 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .draft-card-options .static-card {
   margin: 0;
   min-height: 210px;
+  overflow: hidden;
 }
 
 .draft-card-options .static-card p {
   -webkit-line-clamp: 4;
+}
+
+.draft-card-options .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
 }
 
 .vertical-divider {
@@ -3329,8 +3335,19 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
+}
+
+.upgrade-arrow-indicator {
+  font-size: 1.6rem;
+  color: var(--bit-gold);
+  text-shadow: 2px 2px 0 var(--bit-shadow);
+  font-family: var(--pixel);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 24px;
 }
 
 .comparison-card-wrapper {
@@ -3339,20 +3356,27 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   gap: 6px;
   align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
 .comparison-card-wrapper .static-card {
   width: 100%;
   min-height: 200px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .comparison-card-wrapper .static-card p {
   -webkit-line-clamp: 4;
 }
 
-.comparison-card-wrapper {
-  min-width: 0;
+.comparison-card-wrapper .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
+}
+
+.comparison-card-wrapper .card-head {
+  min-height: 26px;
 }
 
 .comparison-card-wrapper .card-state-label {
@@ -3362,19 +3386,17 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   color: var(--bit-gold);
   letter-spacing: 0.04em;
   text-shadow: 1px 1px 0 var(--bit-shadow);
-}
-
-.upgrade-arrow-indicator {
-  font-size: 1.6rem;
-  color: var(--bit-gold);
-  text-shadow: 2px 2px 0 var(--bit-shadow);
-  font-family: var(--pixel);
+  min-height: 18px;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .upgrade-action-btn {
   align-self: center;
   width: 100%;
   max-width: 240px;
+  margin-top: 4px;
+  flex-shrink: 0;
 }
 
 .no-upgrades-container {
@@ -3553,10 +3575,16 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
 .retire-card-item .static-card {
   min-height: 180px;
+  overflow: hidden;
 }
 
 .retire-card-item .static-card p {
   -webkit-line-clamp: 4;
+}
+
+.retire-card-item .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
 }
 
 .retire-action-btn { width: 100%; }
