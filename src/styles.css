@@ -3217,7 +3217,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   gap: 18px;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   align-items: stretch;
   padding: 10px 0;
 }
@@ -3228,6 +3228,11 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+}
+
+.draft-section {
+  overflow-y: auto;
 }
 
 .draft-section h3,
@@ -3303,6 +3308,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .upgrade-comparison-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -3315,6 +3321,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   gap: 12px;
   padding: 14px;
   min-height: 0;
+  min-width: 0;
   background: var(--bit-bg-deep);
   border: 3px solid var(--bit-gold-deep);
   box-shadow:
@@ -3337,6 +3344,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   justify-content: center;
   gap: 10px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .upgrade-arrow-indicator {
