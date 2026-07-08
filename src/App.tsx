@@ -570,7 +570,7 @@ function StaticCard({ defId, onClick, className }: { defId: string; onClick?: ()
   if (onClick) {
     return (
       <button
-        className={`action-card static-card draft-option-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}
+        className={`action-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}
         onClick={onClick}
         type="button"
       >
@@ -580,7 +580,7 @@ function StaticCard({ defId, onClick, className }: { defId: string; onClick?: ()
   }
 
   return (
-    <div className={`action-card static-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}>
+    <div className={`action-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}>
       {content}
     </div>
   );

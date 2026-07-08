@@ -3121,8 +3121,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
    Upgraded Card & Draft Overlay Styles
    ============================================================ */
 
-.action-card.is-upgraded,
-.static-card.is-upgraded {
+.action-card.is-upgraded {
   border-color: var(--bit-gold) !important;
   border-width: 4px !important;
   box-shadow:
@@ -3130,8 +3129,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
     4px 4px 0 var(--bit-shadow) !important;
 }
 
-.action-card.is-upgraded:hover:not(:disabled),
-.static-card.is-upgraded:hover:not(:disabled) {
+.action-card.is-upgraded:hover:not(:disabled) {
   border-color: var(--bit-gold) !important;
   box-shadow:
     inset 0 0 0 2px var(--bit-gold),
@@ -3266,12 +3264,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   grid-template-columns: repeat(3, 1fr);
 }
 
-.improv-card-grid .static-card {
+.improv-card-grid .action-card {
   min-height: 210px;
   overflow: hidden;
+  width: 100%;
+  max-width: none;
+  height: auto;
 }
 
-.improv-card-grid .static-card p {
+.improv-card-grid .action-card p {
   -webkit-line-clamp: 4;
 }
 
@@ -3293,13 +3294,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   box-shadow: 2px 2px 0 var(--bit-shadow);
 }
 
-.improv-card-cell .static-card {
+.improv-card-cell .action-card {
   min-height: 210px;
   overflow: hidden;
   width: 100%;
+  max-width: none;
+  height: auto;
 }
 
-.improv-card-cell .static-card p {
+.improv-card-cell .action-card p {
   -webkit-line-clamp: 4;
 }
 
@@ -3358,40 +3361,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   .improv-section {
     padding: 12px 10px;
   }
-}
-
-/* ============================================================
-   Static card (draft / upgrade / retire previews)
-   ============================================================ */
-
-.static-card {
-  display: grid;
-  grid-template-rows: auto 60px minmax(0, 1fr);
-  gap: 6px;
-  padding: 12px;
-  background: var(--bit-paper);
-  border: 4px solid var(--bit-shadow);
-  box-shadow:
-    inset 0 0 0 2px var(--bit-gold-deep),
-    4px 4px 0 var(--bit-shadow);
-  color: var(--bit-text-dark);
-  font-family: var(--sans);
-  text-align: left;
-  transition: transform 100ms steps(2, end), box-shadow 100ms steps(2, end);
-}
-
-.static-card:hover {
-  transform: translate(-2px, -2px);
-  border-color: var(--bit-gold);
-  box-shadow:
-    inset 0 0 0 2px var(--bit-gold),
-    6px 6px 0 var(--bit-shadow);
-}
-
-.static-card.draft-option-card {
-  cursor: pointer;
-  text-align: left;
-  background: var(--bit-paper);
 }
 
 /* ============================================================
