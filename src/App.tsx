@@ -447,70 +447,63 @@ export function App() {
       <div className="draft-upgrade-container">
         <div className="draft-upgrade-header">
           <h2>Deck Improvement Phase</h2>
-          <p>Choose <strong>one</strong> card to draft or upgrade to prepare for upcoming crises.</p>
+          <p>Choose <strong>one</strong> action to improve your deck for upcoming crises.</p>
         </div>
-        <div className="draft-upgrade-split">
-          <div className="draft-section">
-            <h3>Option A: Draft a New Card</h3>
-            <p className="section-subtitle">Add one of these 3 random actions to your discard pile</p>
-            <div className="draft-card-options">
-              {game.draftOptions.map((defId) => (
-                <StaticCard
-                  key={defId}
-                  defId={defId}
-                  onClick={() => setGame((state) => state ? draftCard(state, defId) : null)}
-                />
+
+        <section className="improv-section">
+          <h3 className="improv-section-title">Draft a New Card</h3>
+          <p className="improv-section-sub">Add one of these 3 random actions to your discard pile</p>
+          <div className="improv-card-grid improv-card-grid--fixed">
+            {game.draftOptions.map((defId) => (
+              <StaticCard
+                key={defId}
+                defId={defId}
+                onClick={() => setGame((state) => state ? draftCard(state, defId) : null)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="improv-section">
+          <h3 className="improv-section-title">Upgrade an Existing Card</h3>
+          <p className="improv-section-sub">Choose one card in your deck to upgrade permanently</p>
+          {upgradableCards.length === 0 ? (
+            <div className="improv-empty">
+              <p>No upgradable cards in your current deck.</p>
+            </div>
+          ) : (
+            <div className="improv-card-grid">
+              {upgradableCards.map((card) => (
+                <div key={card.id} className="improv-card-cell">
+                  <StaticCard defId={card.upgradesTo!} />
+                  <button
+                    className="filled-button improv-action-btn"
+                    onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
+                    type="button"
+                  >
+                    Upgrade {card.name}
+                  </button>
+                </div>
               ))}
             </div>
-          </div>
+          )}
+        </section>
 
-          <div className="vertical-divider" aria-hidden="true">
-            <span className="divider-line" />
-            <span className="divider-orb">OR</span>
-            <span className="divider-line" />
-          </div>
-
-          <div className="upgrade-section">
-            <h3>Option B: Upgrade an Existing Card</h3>
-            <p className="section-subtitle">Choose one card currently in your deck to upgrade permanently</p>
-            {upgradableCards.length === 0 ? (
-              <div className="no-upgrades-container">
-                <p className="no-upgrades-msg">No upgradable cards in your current deck.</p>
-              </div>
-            ) : (
-              <div className="upgrade-comparison-list">
-                {upgradableCards.map((card) => (
-                  <div key={card.id} className="upgrade-comparison-row">
-                    <StaticCard defId={card.upgradesTo!} />
-                    <button
-                      className="filled-button upgrade-action-btn"
-                      onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
-                      type="button"
-                    >
-                      Upgrade {card.name}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="retire-section">
-          <h3>Option C: Retire a Card</h3>
-          <p className="section-subtitle">Permanently remove a card from your deck to improve consistency</p>
+        <section className="improv-section">
+          <h3 className="improv-section-title">Retire a Card</h3>
+          <p className="improv-section-sub">Remove a card from your deck to improve consistency</p>
           {(() => {
             const retireable = getRetireableCards(game);
             if (retireable.length === 0) {
-              return <div className="no-upgrades-container"><p className="no-upgrades-msg">No cards to retire.</p></div>;
+              return <div className="improv-empty"><p>No cards to retire.</p></div>;
             }
             return (
-              <div className="retire-card-list">
+              <div className="improv-card-grid">
                 {retireable.map((card) => (
-                  <div key={card.id} className="retire-card-item">
+                  <div key={card.id} className="improv-card-cell">
                     <StaticCard defId={card.id} />
                     <button
-                      className="tonal-button retire-action-btn"
+                      className="tonal-button improv-action-btn"
                       onClick={() => setGame((state) => state ? retireCard(state, card.id) : null)}
                       type="button"
                     >
@@ -521,7 +514,7 @@ export function App() {
               </div>
             );
           })()}
-        </div>
+        </section>
 
         <div className="draft-upgrade-footer">
           <button
@@ -529,7 +522,7 @@ export function App() {
             onClick={() => setGame((state) => state ? skipDraftOrUpgrade(state) : null)}
             type="button"
           >
-            Skip Deck Improvement (Keep Deck Unchanged)
+            Skip (Keep Deck Unchanged)
           </button>
         </div>
       </div>

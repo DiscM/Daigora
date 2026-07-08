@@ -3212,164 +3212,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   margin: 0;
 }
 
-.draft-upgrade-split {
-  display: flex;
-  gap: 18px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  align-items: stretch;
-  padding: 10px 0;
-}
-
-.draft-section,
-.upgrade-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.draft-section h3,
-.upgrade-section h3 {
-  font-family: var(--pixel);
-  color: var(--bit-cyan);
-  font-size: 0.86rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--bit-shadow);
-}
-
-.draft-section .section-subtitle,
-.upgrade-section .section-subtitle {
-  font-size: 1rem;
-  color: var(--bit-text);
-  font-family: var(--sans);
-  margin: 0 0 14px;
-}
-
-.draft-card-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  align-content: start;
-}
-
-.draft-card-options .static-card {
-  margin: 0;
-  min-height: 210px;
-  overflow: hidden;
-}
-
-.draft-card-options .static-card p {
-  -webkit-line-clamp: 4;
-}
-
-.draft-card-options .card-costs {
-  flex-wrap: nowrap;
-  min-width: auto;
-}
-
-.vertical-divider {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 36px;
-}
-
-.vertical-divider .divider-line {
-  width: 4px;
-  background: var(--bit-shadow);
-  flex: 1;
-  border-left: 2px solid var(--bit-gold);
-  border-right: 2px solid var(--bit-gold);
-}
-
-.vertical-divider .divider-orb {
-  font-size: 0.62rem;
-  color: var(--bit-text-dark);
-  padding: 8px;
-  border: 3px solid var(--bit-shadow);
-  background: var(--bit-gold);
-  box-shadow: 2px 2px 0 var(--bit-shadow);
-  font-family: var(--pixel);
-  letter-spacing: 0;
-}
-
-.upgrade-comparison-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  align-content: start;
-}
-
-.upgrade-comparison-row {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  min-height: 0;
-  min-width: 0;
-  background: var(--bit-bg-deep);
-  border: 3px solid var(--bit-gold-deep);
-  box-shadow:
-    inset 0 0 0 2px var(--bit-shadow),
-    3px 3px 0 var(--bit-shadow);
-  transition: transform 100ms steps(2, end), box-shadow 100ms steps(2, end);
-}
-
-.upgrade-comparison-row .static-card {
-  width: 100%;
-  min-height: 210px;
-  overflow: hidden;
-}
-
-.upgrade-comparison-row .static-card p {
-  -webkit-line-clamp: 4;
-}
-
-.upgrade-comparison-row .card-costs {
-  flex-wrap: nowrap;
-  min-width: auto;
-}
-
-.upgrade-comparison-row:hover {
-  border-color: var(--bit-cyan);
-  transform: translate(-1px, -1px);
-  box-shadow:
-    inset 0 0 0 2px var(--bit-cyan),
-    5px 5px 0 var(--bit-shadow);
-}
-
-.upgrade-action-btn {
-  width: 100%;
-  flex-shrink: 0;
-}
-
-.no-upgrades-container {
-  display: grid;
-  place-items: center;
-  flex: 1;
-  background: var(--bit-bg-deep);
-  border: 3px dashed var(--bit-gold-deep);
-  padding: 24px;
-}
-
-.no-upgrades-msg {
-  color: var(--bit-cyan);
-  font-family: var(--pixel);
-  font-size: 0.78rem;
-  margin: 0;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-
 .draft-upgrade-footer {
   text-align: center;
   margin-top: 14px;
@@ -3380,6 +3222,112 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .skip-phase-btn {
   min-height: 44px;
   padding: 0 22px;
+}
+
+/* ============================================================
+   Improv sections (Draft / Upgrade / Retire)
+   ============================================================ */
+
+.improv-section {
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  background: var(--bit-bg-deep);
+  border: 3px solid var(--bit-gold-deep);
+  box-shadow:
+    inset 0 0 0 2px var(--bit-shadow),
+    3px 3px 0 var(--bit-shadow);
+}
+
+.improv-section-title {
+  font-family: var(--pixel);
+  color: var(--bit-cyan);
+  font-size: 0.86rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--bit-shadow);
+}
+
+.improv-section-sub {
+  font-size: 1rem;
+  color: var(--bit-text);
+  font-family: var(--sans);
+  margin: 0 0 14px;
+}
+
+.improv-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.improv-card-grid--fixed {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.improv-card-grid .static-card {
+  min-height: 210px;
+  overflow: hidden;
+}
+
+.improv-card-grid .static-card p {
+  -webkit-line-clamp: 4;
+}
+
+.improv-card-grid .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
+}
+
+.improv-card-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  padding: 10px;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bit-panel);
+  border: 2px solid var(--bit-shadow);
+  box-shadow: 2px 2px 0 var(--bit-shadow);
+}
+
+.improv-card-cell .static-card {
+  min-height: 210px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.improv-card-cell .static-card p {
+  -webkit-line-clamp: 4;
+}
+
+.improv-card-cell .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
+}
+
+.improv-action-btn {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.improv-empty {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bit-bg-deep);
+  border: 3px dashed var(--bit-gold-deep);
+}
+
+.improv-empty p {
+  color: var(--bit-cyan);
+  font-family: var(--pixel);
+  font-size: 0.78rem;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .game-mode-select {
@@ -3400,30 +3348,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 }
 
 @media (max-width: 900px) {
-  .draft-upgrade-split {
-    flex-direction: column;
-    overflow-y: auto;
-    min-height: 0;
-    flex-shrink: 1;
-  }
-  .vertical-divider {
-    flex-direction: row;
-    width: 100%;
-    height: 24px;
-  }
-  .vertical-divider .divider-line {
-    height: 1.5px;
-    width: 100%;
-  }
   .draft-upgrade-container {
     max-height: 96vh;
   }
-  .draft-card-options,
-  .upgrade-comparison-list {
+  .improv-card-grid,
+  .improv-card-grid--fixed {
     grid-template-columns: 1fr;
   }
-  .retire-card-list {
-    max-height: 200px;
+  .improv-section {
+    padding: 12px 10px;
   }
 }
 
@@ -3460,76 +3393,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   text-align: left;
   background: var(--bit-paper);
 }
-
-/* Retired card section */
-.retire-section {
-  min-height: 0;
-  flex-shrink: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  margin-top: 14px;
-}
-
-.retire-section h3 {
-  font-family: var(--pixel);
-  color: var(--bit-cyan);
-  font-size: 0.86rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--bit-shadow);
-}
-
-.retire-section .section-subtitle {
-  font-size: 1rem;
-  color: var(--bit-text);
-  font-family: var(--sans);
-  margin: 0 0 14px;
-}
-
-.retire-card-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  padding: 12px;
-  max-height: 260px;
-  overflow-y: auto;
-  background: var(--bit-bg-deep);
-  border: 3px solid var(--bit-orange-deep);
-  box-shadow:
-    inset 0 0 0 2px var(--bit-shadow),
-    3px 3px 0 var(--bit-shadow);
-}
-
-.retire-card-item {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  padding: 10px;
-  background: var(--bit-panel);
-  border: 2px solid var(--bit-shadow);
-  box-shadow: 2px 2px 0 var(--bit-shadow);
-  min-height: 0;
-}
-
-.retire-card-item .static-card {
-  min-height: 180px;
-  overflow: hidden;
-}
-
-.retire-card-item .static-card p {
-  -webkit-line-clamp: 4;
-}
-
-.retire-card-item .card-costs {
-  flex-wrap: nowrap;
-  min-width: auto;
-}
-
-.retire-action-btn { width: 100%; }
 
 /* ============================================================
    Crisis choice overlay
