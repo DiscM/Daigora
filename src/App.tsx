@@ -481,17 +481,7 @@ export function App() {
               <div className="upgrade-comparison-list">
                 {upgradableCards.map((card) => (
                   <div key={card.id} className="upgrade-comparison-row">
-                    <div className="upgrade-cards-side-by-side">
-                      <div className="comparison-card-wrapper base-card">
-                        <span className="card-state-label">Current</span>
-                        <StaticCard defId={card.id} />
-                      </div>
-                      <div className="upgrade-arrow-indicator" aria-hidden="true">➔</div>
-                      <div className="comparison-card-wrapper upgraded-card">
-                        <span className="card-state-label">Upgraded</span>
-                        <StaticCard defId={card.upgradesTo!} />
-                      </div>
-                    </div>
+                    <StaticCard defId={card.upgradesTo!} />
                     <button
                       className="filled-button upgrade-action-btn"
                       onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}

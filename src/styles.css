@@ -3228,10 +3228,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
-}
-
-.draft-section {
   overflow-y: auto;
 }
 
@@ -3306,20 +3302,18 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 }
 
 .upgrade-comparison-list {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  padding-right: 8px;
+  align-content: start;
 }
 
 .upgrade-comparison-row {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
   min-height: 0;
   min-width: 0;
   background: var(--bit-bg-deep);
@@ -3330,6 +3324,21 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   transition: transform 100ms steps(2, end), box-shadow 100ms steps(2, end);
 }
 
+.upgrade-comparison-row .static-card {
+  width: 100%;
+  min-height: 210px;
+  overflow: hidden;
+}
+
+.upgrade-comparison-row .static-card p {
+  -webkit-line-clamp: 4;
+}
+
+.upgrade-comparison-row .card-costs {
+  flex-wrap: nowrap;
+  min-width: auto;
+}
+
 .upgrade-comparison-row:hover {
   border-color: var(--bit-cyan);
   transform: translate(-1px, -1px);
@@ -3338,72 +3347,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
     5px 5px 0 var(--bit-shadow);
 }
 
-.upgrade-cards-side-by-side {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 10px;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.upgrade-arrow-indicator {
-  font-size: 1.6rem;
-  color: var(--bit-gold);
-  text-shadow: 2px 2px 0 var(--bit-shadow);
-  font-family: var(--pixel);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding-top: 24px;
-}
-
-.comparison-card-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.comparison-card-wrapper .static-card {
-  width: 100%;
-  min-height: 200px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.comparison-card-wrapper .static-card p {
-  -webkit-line-clamp: 4;
-}
-
-.comparison-card-wrapper .card-costs {
-  flex-wrap: nowrap;
-  min-width: auto;
-}
-
-.comparison-card-wrapper .card-head {
-  min-height: 26px;
-}
-
-.comparison-card-wrapper .card-state-label {
-  font-family: var(--pixel);
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  color: var(--bit-gold);
-  letter-spacing: 0.04em;
-  text-shadow: 1px 1px 0 var(--bit-shadow);
-  min-height: 18px;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
 .upgrade-action-btn {
-  align-self: center;
   width: 100%;
-  max-width: 240px;
-  margin-top: 4px;
   flex-shrink: 0;
 }
 
@@ -3473,14 +3418,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   .draft-upgrade-container {
     max-height: 96vh;
   }
-  .draft-card-options {
+  .draft-card-options,
+  .upgrade-comparison-list {
     grid-template-columns: 1fr;
   }
   .retire-card-list {
     max-height: 200px;
-  }
-  .upgrade-cards-side-by-side {
-    gap: 8px;
   }
 }
 
@@ -3515,15 +3458,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 .static-card.draft-option-card {
   cursor: pointer;
   text-align: left;
-  background: var(--bit-paper);
-}
-
-.static-card.upgraded-card {
-  background: var(--bit-gold);
-  border-color: var(--bit-orange-deep);
-}
-
-.static-card.base-card {
   background: var(--bit-paper);
 }
 
