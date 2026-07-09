@@ -274,6 +274,7 @@ export function createGame(seed = 'earth-month', selectedAidIds = ['educator', '
     difficulty,
     turnLimit,
     draftOptions: [],
+    upgradeOptions: [],
     turn: 0,
     planetHealth: (gameMode === 'campaign' ? 24 : 20) - (difficulty === 'hard' ? 2 : difficulty === 'apocalypse' ? 4 : 0),
     maxPlanetHealth: (gameMode === 'campaign' ? 24 : 20) - (difficulty === 'hard' ? 2 : difficulty === 'apocalypse' ? 4 : 0),
@@ -564,6 +565,7 @@ export function endTurn(input: GameState): GameState {
   if (state.turn < state.turnLimit) {
     state.phase = 'draftOrUpgrade';
     state.draftOptions = getDraftOptions(state);
+    state.upgradeOptions = getUpgradeOptions(state);
     return state;
   }
   return startTurn(state);
@@ -619,18 +621,44 @@ function getDraftOptions(state: GameState): string[] {
   return options;
 }
 
+function getUpgradeOptions(state: GameState): string[] {
+  const seen = new Set<string>();
+  const pool: string[] = [];
+  for (const pile of [state.hand, state.deck, state.discard]) {
+    for (const instance of pile) {
+      const def = findDefinition(instance);
+      if (!def.upgradesTo || seen.has(def.id)) continue;
+      seen.add(def.id);
+      pool.push(def.id);
+    }
+  }
+
+  const options: string[] = [];
+  let rng = state.rngState;
+  while (options.length < 4 && pool.length > 0) {
+    const [random, nextRng] = nextRandom(rng);
+    rng = nextRng;
+    const index = Math.floor(random * pool.length);
+    options.push(pool.splice(index, 1)[0]);
+  }
+  state.rngState = rng;
+  return options;
+}
+
 export function draftCard(input: GameState, cardId: string): GameState {
   const state = cloneState(input);
   if (state.phase !== 'draftOrUpgrade') return state;
   const inst = { instanceId: nextInstanceId(state, 'draft'), defId: cardId };
   state.discard.push(inst);
   state.draftOptions = [];
+  state.upgradeOptions = [];
   return startTurn(state);
 }
 
 export function upgradeCard(input: GameState, defId: string): GameState {
   const state = cloneState(input);
   if (state.phase !== 'draftOrUpgrade') return state;
+  if (state.upgradeOptions.length > 0 && !state.upgradeOptions.includes(defId)) return state;
   const upgradedId = cardById[defId]?.upgradesTo;
   if (upgradedId) {
     let replaced = false;
@@ -667,6 +695,7 @@ export function upgradeCard(input: GameState, defId: string): GameState {
     }
   }
   state.draftOptions = [];
+  state.upgradeOptions = [];
   return startTurn(state);
 }
 
@@ -674,6 +703,7 @@ export function skipDraftOrUpgrade(input: GameState): GameState {
   const state = cloneState(input);
   if (state.phase !== 'draftOrUpgrade') return state;
   state.draftOptions = [];
+  state.upgradeOptions = [];
   return startTurn(state);
 }
 
@@ -710,6 +740,7 @@ export function retireCard(input: GameState, defId: string): GameState {
     state.log = addLog(state, `Retired ${cardById[defId].name} from the deck permanently.`);
   }
   state.draftOptions = [];
+  state.upgradeOptions = [];
   return startTurn(state);
 }
 

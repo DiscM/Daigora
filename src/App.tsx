@@ -10,6 +10,7 @@ import { IndexMeter } from './components/IndexMeter';
 import { ActionCard } from './components/ActionCard';
 import { ActiveProjects } from './components/ActiveProjects';
 import { CrisisPanel } from './components/CrisisPanel';
+import { StaticCard } from './components/CardFace';
 
 const SAVE_KEY = 'heal-the-planet-save-v1';
 const DEFAULT_AIDS = ['educator', 'disaster-responder'];
@@ -34,11 +35,9 @@ function useViewportScale(ref: React.RefObject<HTMLElement | null>, reFitDeps: R
 
     const refit = () => {
       const w = el.scrollWidth;
-      const h = el.scrollHeight;
       const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      if (!w || !h || !vw || !vh) return;
-      const scale = Math.min(vw / w, vh / h);
+      if (!w || !vw) return;
+      const scale = vw / w;
       applyScale(scale);
     };
 
@@ -133,11 +132,9 @@ export function App() {
 
   const upgradableCards = useMemo(() => {
     if (!game) return [];
-    const allInstances = [...game.hand, ...game.deck, ...game.discard];
-    const uniqueDefIds = Array.from(new Set(allInstances.map((c) => c.defId)));
-    return uniqueDefIds
+    return game.upgradeOptions
       .map((defId) => cardById[defId])
-      .filter((card) => card && card.upgradesTo);
+      .filter((card) => Boolean(card?.upgradesTo));
   }, [game]);
 
   function startGameFromSetup() {
@@ -281,6 +278,45 @@ export function App() {
             </div>
           ))}
         </div>
+        <CrisisPanel game={game} />
+        <div className="stage-menu">
+          <section className="panel session-panel stage-session-panel" aria-label="Game status">
+            <div className="brand">
+              <h1>Heal the Planet</h1>
+            </div>
+            <div className="resource-strip" aria-label="Game resources">
+              <Resource label="Turn" value={`${Math.min(game.turn, game.turnLimit)}/${game.turnLimit}`} kind="turn" />
+              <Resource key={`health-${flashTick}-${flashes.health ?? 'stable'}`} label="Health" value={`${game.planetHealth}/${game.maxPlanetHealth}`} kind="health" tone={game.planetHealth <= 6 ? 'danger' : 'good'} flash={flashes.health} />
+              <Resource key={`ap-${flashTick}-${flashes.actionPoints ?? 'stable'}`} label="AP" value={game.actionPoints} kind="ap" flash={flashes.actionPoints} />
+              <Resource key={`pp-${flashTick}-${flashes.policyPoints ?? 'stable'}`} label="PP" value={game.policyPoints} kind="pp" flash={flashes.policyPoints} />
+            </div>
+          </section>
+          <div className="aid-row">
+            {gameAids.map((aid) => (
+              <div className="aid-token" key={aid.id} tabIndex={0}>
+                <span>{aid.name.replace('The ', '')}</span>
+                {aid.ability && (
+                  <button
+                    className={`aid-ability-btn ${game.advisorAbilityUsed[aid.id] ? 'used' : ''}`}
+                    disabled={game.advisorAbilityUsed[aid.id] || game.phase === 'gameOver'}
+                    onClick={() => setGame((s) => s ? useAdvisorAbility(s, aid.id) : s)}
+                    type="button"
+                    title={aid.ability}
+                  >
+                    {game.advisorAbilityUsed[aid.id] ? 'Used' : 'Ability'}
+                  </button>
+                )}
+                <span className="aid-tooltip" role="tooltip">
+                  <b>Benefit</b>
+                  {aid.passive}
+                  <b>Drawback</b>
+                  {aid.drawback}
+                  {aid.ability && <><b>Ability</b>{aid.ability}</>}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="vector-planet" aria-hidden="true">
           <span className="planet-glow" />
           <span className="planet-ocean" />
@@ -323,31 +359,6 @@ export function App() {
             </span>
           </span>
         </div>
-        <div className="aid-row">
-          {gameAids.map((aid) => (
-            <div className="aid-token" key={aid.id} tabIndex={0}>
-              <span>{aid.name.replace('The ', '')}</span>
-              {aid.ability && (
-                <button
-                  className={`aid-ability-btn ${game.advisorAbilityUsed[aid.id] ? 'used' : ''}`}
-                  disabled={game.advisorAbilityUsed[aid.id] || game.phase === 'gameOver'}
-                  onClick={() => setGame((s) => s ? useAdvisorAbility(s, aid.id) : s)}
-                  type="button"
-                  title={aid.ability}
-                >
-                  {game.advisorAbilityUsed[aid.id] ? 'Used' : 'Ability'}
-                </button>
-              )}
-              <span className="aid-tooltip" role="tooltip">
-                <b>Benefit</b>
-                {aid.passive}
-                <b>Drawback</b>
-                {aid.drawback}
-                {aid.ability && <><b>Ability</b>{aid.ability}</>}
-              </span>
-            </div>
-          ))}
-        </div>
         {game.phase === 'gameOver' && (
           <div className="result-card">
             <p className="eyebrow">Final Rating</p>
@@ -358,34 +369,19 @@ export function App() {
       </section>
 
       <section className="bottom-console" aria-label="Game controls">
-        <section className="panel session-panel">
-          <div className="brand">
-            <h1>Heal the Planet</h1>
-          </div>
-          <div className="resource-strip" aria-label="Game resources">
-            <Resource label="Turn" value={`${Math.min(game.turn, game.turnLimit)}/${game.turnLimit}`} kind="turn" />
-            <Resource key={`health-${flashTick}-${flashes.health ?? 'stable'}`} label="Health" value={`${game.planetHealth}/${game.maxPlanetHealth}`} kind="health" tone={game.planetHealth <= 6 ? 'danger' : 'good'} flash={flashes.health} />
-            <Resource key={`ap-${flashTick}-${flashes.actionPoints ?? 'stable'}`} label="AP" value={game.actionPoints} kind="ap" flash={flashes.actionPoints} />
-            <Resource key={`pp-${flashTick}-${flashes.policyPoints ?? 'stable'}`} label="PP" value={game.policyPoints} kind="pp" flash={flashes.policyPoints} />
-          </div>
-        </section>
-
-        <CrisisPanel game={game} />
-
         <section className="hand-row" aria-label="Action hand">
           {game.hand.map((card) => (
             <ActionCard key={card.instanceId} game={game} instance={card} onPlay={() => setGame((state) => (state ? playCard(state, card.instanceId) : state))} />
           ))}
         </section>
 
-        <aside className="panel meter-panel">
-          <p className="eyebrow">Readiness</p>
-          {INDEX_KEYS.map((key) => (
-            <IndexMeter key={`${key}-${flashTick}-${flashes.indexes[key] ?? 'stable'}`} indexKey={key} value={game.indexes[key]} flash={flashes.indexes[key]} />
-          ))}
-        </aside>
-
-        <div className="side-actions">
+        <aside className="panel command-panel" aria-label="Readiness, active projects, and actions">
+          <div className="meter-panel readiness-block">
+            <p className="eyebrow">Readiness</p>
+            {INDEX_KEYS.map((key) => (
+              <IndexMeter key={`${key}-${flashTick}-${flashes.indexes[key] ?? 'stable'}`} indexKey={key} value={game.indexes[key]} flash={flashes.indexes[key]} />
+            ))}
+          </div>
           <ActiveProjects game={game} />
           <div className="quick-actions">
             <details className="header-actions">
@@ -412,7 +408,7 @@ export function App() {
               End Turn
             </button>
           </div>
-        </div>
+        </aside>
       </section>
     </main>
   );
@@ -466,24 +462,22 @@ export function App() {
 
         <section className="improv-section">
           <h3 className="improv-section-title">Upgrade an Existing Card</h3>
-          <p className="improv-section-sub">Choose one card in your deck to upgrade permanently</p>
+          <p className="improv-section-sub">Choose one of these 4 upgrade options from your unupgraded cards</p>
           {upgradableCards.length === 0 ? (
             <div className="improv-empty">
               <p>No upgradable cards in your current deck.</p>
             </div>
           ) : (
-            <div className="improv-card-grid">
+            <div className="improv-card-grid improv-card-grid--fixed-four">
               {upgradableCards.map((card) => (
-                <div key={card.id} className="improv-card-cell">
-                  <StaticCard defId={card.upgradesTo!} />
-                  <button
-                    className="filled-button improv-action-btn"
-                    onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
-                    type="button"
-                  >
-                    Upgrade {card.name}
-                  </button>
-                </div>
+                <StaticCard
+                  key={card.id}
+                  defId={card.upgradesTo!}
+                  ariaLabel={`Upgrade ${card.name}`}
+                  className="improv-upgrade-card"
+                  onClick={() => setGame((state) => state ? upgradeCard(state, card.id) : null)}
+                  title={`Upgrade ${card.name} to ${cardById[card.upgradesTo!].name}`}
+                />
               ))}
             </div>
           )}
@@ -540,52 +534,6 @@ export function App() {
   );
 }
 
-function StaticCard({ defId, onClick, className }: { defId: string; onClick?: () => void; className?: string }) {
-  const card = cardById[defId];
-  if (!card) return null;
-  const typeClass = card.type.toLowerCase().replaceAll(' ', '-');
-  const isUpgraded = defId.endsWith('-upgraded');
-  const displayName = card.name.endsWith('+') ? card.name.slice(0, -1) : card.name;
-  
-  const apCost = card.costAp ?? 0;
-  const ppCost = card.costPp ?? 0;
-
-  const content = (
-    <>
-      <span className="card-head">
-        <span className="card-costs">
-          {apCost > 0 || ppCost === 0 ? <span className="card-cost ap">{apCost}</span> : null}
-          {ppCost > 0 ? <span className="card-cost pp">{ppCost}</span> : null}
-        </span>
-        <strong>
-          {displayName}
-          {isUpgraded && <span className="upgraded-badge">+</span>}
-        </strong>
-      </span>
-      <span className={`card-art ${typeClass}`} aria-hidden="true" />
-      <p>{card.text}</p>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <button
-        className={`action-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}
-        onClick={onClick}
-        type="button"
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <div className={`action-card ${typeClass} ${isUpgraded ? 'is-upgraded' : ''} ${className ?? ''}`}>
-      {content}
-    </div>
-  );
-}
-
 function AidPicker({ selectedAidIds, toggleAid, className }: { selectedAidIds: string[]; toggleAid: (id: string) => void; className?: string }) {
   return (
     <div className={className ?? 'aid-picker'}>
@@ -614,6 +562,7 @@ function normalizeSavedGame(saved: GameState): GameState {
     difficulty: saved.difficulty ?? 'normal',
     turnLimit: saved.turnLimit ?? (saved.gameMode === 'workshop' ? 10 : 20),
     draftOptions: saved.draftOptions ?? [],
+    upgradeOptions: saved.upgradeOptions ?? getSavedUpgradeOptions(saved),
     nextInstanceId: saved.nextInstanceId ?? cardCount + 1,
     educationPlayedThisTurn: saved.educationPlayedThisTurn ?? false,
     desperationApBonusNextTurn: saved.desperationApBonusNextTurn ?? 0,
@@ -652,8 +601,25 @@ function isSavedGameShape(value: unknown): value is GameState {
     Array.isArray(candidate.log) &&
     (candidate.gameMode === undefined || candidate.gameMode === 'campaign' || candidate.gameMode === 'workshop') &&
     (candidate.turnLimit === undefined || typeof candidate.turnLimit === 'number') &&
-    (candidate.draftOptions === undefined || Array.isArray(candidate.draftOptions))
+    (candidate.draftOptions === undefined || Array.isArray(candidate.draftOptions)) &&
+    (candidate.upgradeOptions === undefined || Array.isArray(candidate.upgradeOptions))
   );
+}
+
+function getSavedUpgradeOptions(saved: GameState): string[] {
+  if (saved.phase !== 'draftOrUpgrade') return [];
+  const seen = new Set<string>();
+  const options: string[] = [];
+  for (const pile of [saved.hand, saved.deck, saved.discard]) {
+    for (const instance of pile) {
+      const def = cardById[instance.defId];
+      if (!def?.upgradesTo || seen.has(def.id)) continue;
+      seen.add(def.id);
+      options.push(def.id);
+      if (options.length === 4) return options;
+    }
+  }
+  return options;
 }
 
 function resourceFlash(previous: number | undefined, current: number): 'gain' | 'loss' | undefined {

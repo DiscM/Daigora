@@ -472,6 +472,9 @@ describe('Heal the Planet engine', () => {
     state = endTurn(state);
     expect(state.phase).toBe('draftOrUpgrade');
     expect(state.draftOptions).toHaveLength(3);
+    expect(state.upgradeOptions).toHaveLength(4);
+    expect(new Set(state.upgradeOptions).size).toBe(4);
+    expect(state.upgradeOptions.every((defId) => Boolean(cardById[defId]?.upgradesTo))).toBe(true);
 
     const selectedDraft = state.draftOptions[0];
     state = draftCard(state, selectedDraft);
@@ -495,6 +498,26 @@ describe('Heal the Planet engine', () => {
     const allCards = [...state.hand, ...state.deck, ...state.discard];
     expect(allCards.some((card) => card.defId === 'community-workshop-upgraded')).toBe(true);
     expect(allCards.filter((card) => card.defId === 'community-workshop')).toHaveLength(2);
+  });
+
+  it('only upgrades cards from the current upgrade options', () => {
+    let state = createGame('upgrade-options-test', []);
+    state.hand = [];
+    state.deck = [
+      { defId: 'community-workshop', instanceId: 'cg-1' },
+      { defId: 'river-cleanup', instanceId: 'river-1' },
+    ];
+    state.discard = [];
+    state.phase = 'draftOrUpgrade';
+    state.upgradeOptions = ['community-workshop'];
+
+    const blocked = upgradeCard(state, 'river-cleanup');
+    expect(blocked.phase).toBe('draftOrUpgrade');
+    expect(blocked.deck.some((card) => card.defId === 'river-cleanup-upgraded')).toBe(false);
+
+    state = upgradeCard(state, 'community-workshop');
+    expect(state.phase).toBe('play');
+    expect([...state.hand, ...state.deck, ...state.discard].some((card) => card.defId === 'community-workshop-upgraded')).toBe(true);
   });
 
   it('supports skipping drafting or upgrading', () => {

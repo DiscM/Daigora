@@ -97,6 +97,7 @@ export interface GameState {
   difficulty: 'normal' | 'hard' | 'apocalypse';
   turnLimit: number;
   draftOptions: string[];
+  upgradeOptions: string[];
   turn: number;
   planetHealth: number;
   maxPlanetHealth: number;
