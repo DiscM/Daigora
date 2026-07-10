@@ -3270,8 +3270,9 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
   .app-shell {
     height: auto;
     min-height: 100vh;
-    overflow: hidden;
-    grid-template-rows: minmax(420px, 56vh) auto;
+    max-height: none;
+    overflow: visible;
+    grid-template-rows: auto auto;
     padding: 12px;
     gap: 14px;
   }
@@ -3356,6 +3357,59 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: saturate(0.6); }
 
   .bottom-console .hand-row { grid-template-columns: 1fr 1fr; }
   .bottom-console .action-card { min-height: 220px; }
+}
+
+/* ============================================================
+   Responsive: narrow game board (<=720px)
+   Stack the persistent stage HUD around the planet. The crisis
+   and session panels cannot fit side-by-side at this width.
+   ============================================================ */
+
+@media (max-width: 720px) {
+  .planet-stage {
+    min-height: 760px;
+  }
+
+  .stage-menu {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+    width: auto;
+    max-height: none;
+  }
+
+  .planet-stage > .crisis-panel {
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: 16px;
+    width: auto;
+    max-height: 190px;
+    padding: 8px;
+  }
+
+  .planet-stage > .crisis-panel h2 {
+    font-size: 0.72rem;
+  }
+
+  .planet-stage > .crisis-panel .crisis-effects li {
+    padding: 4px 6px;
+    font-size: 0.9rem;
+  }
+
+  .vector-planet {
+    left: 50%;
+    top: 54.5%;
+    width: min(52vw, 200px);
+    translate: -50% -50%;
+  }
+
+  .feedback-layer {
+    left: 16px;
+    right: 16px;
+    top: 46%;
+    width: auto;
+  }
 }
 
 /* ============================================================
