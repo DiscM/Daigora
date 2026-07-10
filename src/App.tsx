@@ -252,7 +252,7 @@ export function App() {
       </main>
     );
     return (
-      <div className="viewport">
+      <div className="viewport start-viewport">
         <div className="scaler" ref={scalerRef}>{startMenu}</div>
       </div>
     );
