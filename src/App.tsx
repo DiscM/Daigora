@@ -525,7 +525,7 @@ export function App() {
 
   return (
     <>
-      <div className="viewport">
+      <div className="viewport game-viewport">
         <div className="scaler" ref={scalerRef}>{gameShell}</div>
       </div>
       {crisisChoiceOverlay && createPortal(crisisChoiceOverlay, document.body)}
