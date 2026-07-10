@@ -93,6 +93,7 @@ export function App() {
   const [selectedAidIds, setSelectedAidIds] = useState<string[]>(game?.selectedAidIds ?? DEFAULT_AIDS);
   const [gameMode, setGameMode] = useState<'campaign' | 'workshop'>(game?.gameMode ?? 'campaign');
   const [difficulty, setDifficulty] = useState<'normal' | 'hard' | 'apocalypse'>('normal');
+  const [selectedRetireCardId, setSelectedRetireCardId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackEvent[]>([]);
   const [flashes, setFlashes] = useState<FlashState>({ indexes: {} });
   const [flashTick, setFlashTick] = useState(0);
@@ -100,11 +101,15 @@ export function App() {
   const feedbackId = useRef(0);
   const scalerRef = useRef<HTMLDivElement>(null);
 
-  useViewportScale(scalerRef, [game?.phase, game?.hand.length, game]);
+  useViewportScale(scalerRef, [game?.phase, game?.hand.length]);
 
   useEffect(() => {
     if (game) localStorage.setItem(SAVE_KEY, JSON.stringify(game));
   }, [game]);
+
+  useEffect(() => {
+    if (game?.phase !== 'draftOrUpgrade') setSelectedRetireCardId(null);
+  }, [game?.phase]);
 
   useEffect(() => {
     const previous = previousGame.current;
@@ -440,7 +445,7 @@ export function App() {
 
   const draftUpgradeOverlay = game.phase === 'draftOrUpgrade' && (
     <div className="draft-upgrade-overlay">
-      <div className="draft-upgrade-container">
+      <div className={`draft-upgrade-container ${selectedRetireCardId ? 'has-retire-selection' : ''}`}>
         <div className="draft-upgrade-header">
           <h2>Deck Improvement Phase</h2>
           <p>Choose <strong>one</strong> action to improve your deck for upcoming crises.</p>
@@ -485,27 +490,61 @@ export function App() {
 
         <section className="improv-section">
           <h3 className="improv-section-title">Retire a Card</h3>
-          <p className="improv-section-sub">Remove a card from your deck to improve consistency</p>
+          <p className="improv-section-sub">Select one card to remove permanently, then confirm your choice</p>
           {(() => {
             const retireable = getRetireableCards(game);
             if (retireable.length === 0) {
               return <div className="improv-empty"><p>No cards to retire.</p></div>;
             }
             return (
-              <div className="improv-card-grid">
-                {retireable.map((card) => (
-                  <div key={card.id} className="improv-card-cell">
-                    <StaticCard defId={card.id} />
-                    <button
-                      className="tonal-button improv-action-btn"
-                      onClick={() => setGame((state) => state ? retireCard(state, card.id) : null)}
-                      type="button"
-                    >
-                      Retire {card.name}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="improv-card-grid improv-retire-grid" role="group" aria-label="Choose a card to retire">
+                  {retireable.map((card) => {
+                    const isSelected = selectedRetireCardId === card.id;
+                    return (
+                      <button
+                        key={card.id}
+                        className="improv-retire-option"
+                        aria-label={`${isSelected ? 'Deselect' : 'Select'} ${card.name} for retirement`}
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedRetireCardId((selected) => selected === card.id ? null : card.id)}
+                        type="button"
+                      >
+                        <StaticCard defId={card.id} />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedRetireCardId && (() => {
+                  const selectedCard = cardById[selectedRetireCardId];
+                  return selectedCard ? (
+                    <div className="improv-retire-confirm" aria-live="polite">
+                      <p><strong>{selectedCard.name}</strong> will be removed from this deck permanently.</p>
+                      <div className="improv-retire-confirm-actions">
+                        <button
+                          className="tonal-button"
+                          onClick={() => setSelectedRetireCardId(null)}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="filled-button"
+                          onClick={() => {
+                            const cardId = selectedRetireCardId;
+                            setSelectedRetireCardId(null);
+                            setGame((state) => state ? retireCard(state, cardId) : null);
+                          }}
+                          type="button"
+                        >
+                          Confirm Retirement
+                        </button>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </>
             );
           })()}
         </section>
